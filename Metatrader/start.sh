@@ -41,17 +41,13 @@ is_wine_python_package_installed() {
 check_dependency "curl"
 check_dependency "$wine_executable"
 
-# Initialize Wine prefix if it doesn't exist
-if [ ! -d "$WINEPREFIX/drive_c" ]; then
-    show_message "[0/7] Initializing Wine prefix..."
-    WINEPREFIX=$WINEPREFIX wineboot --init
-    show_message "[0/7] Wine prefix initialized."
-fi
+# Ensure Wine prefix directory exists for downloads
+mkdir -p "$WINEPREFIX/drive_c"
 
 # Install Mono if not present
 if [ ! -e "/config/.wine/drive_c/windows/mono" ]; then
     show_message "[1/7] Downloading and installing Mono..."
-    curl -o /config/.wine/drive_c/mono.msi $mono_url
+    curl -o "$WINEPREFIX/drive_c/mono.msi" $mono_url
     WINEDLLOVERRIDES=mscoree=d $wine_executable msiexec /i /config/.wine/drive_c/mono.msi /qn
     rm /config/.wine/drive_c/mono.msi
     show_message "[1/7] Mono installed."
@@ -106,7 +102,7 @@ fi
 # Install rpyc in Wine for the classic server
 show_message "[6/7] Checking and installing rpyc library in Windows if necessary"
 if ! is_wine_python_package_installed "rpyc"; then
-    $wine_executable python -m pip install --no-cache-dir rpyc
+    $wine_executable python -m pip install --no-cache-dir "rpyc==5.3.1"
 fi
 
 # Install python-dateutil if needed (datetime is built-in, but dateutil adds features)
@@ -118,7 +114,7 @@ fi
 # Install mt5linux library in Linux if not installed (client-side proxy)
 show_message "[6/7] Checking and installing mt5linux library in Linux if necessary"
 if ! is_python_package_installed "mt5linux"; then
-    pip install --break-system-packages --no-cache-dir mt5linux rpyc
+    pip install --break-system-packages --no-cache-dir mt5linux "rpyc==5.3.1"
 fi
 
 # Install pyxdg library in Linux if not installed
