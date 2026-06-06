@@ -9,7 +9,7 @@ metatrader_version="5.0.36"
 mt5server_port="8001"
 MT5_CMD_OPTIONS="${MT5_CMD_OPTIONS:-}"
 mono_url="https://dl.winehq.org/wine/wine-mono/10.3.0/wine-mono-10.3.0-x86.msi"
-python_url="https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe"
+python_url="https://www.python.org/ftp/python/3.9.13/python-3.9.13.exe"
 mt5setup_url="https://download.terminal.free/cdn/web/pxbt.trading.ltd/mt5/pxbttrading5setup.exe"
 
 # Function to display a graphical message
@@ -61,11 +61,11 @@ else
     # Set Windows 10 mode in Wine and download and install MT5
     $wine_executable reg add "HKEY_CURRENT_USER\\Software\\Wine" /v Version /t REG_SZ /d "win10" /f
     show_message "[3/7] Downloading MT5 installer..."
-    curl -o /config/.wine/drive_c/mt5setup.exe $mt5setup_url
+    curl -o /tmp/mt5setup.exe $mt5setup_url
     show_message "[3/7] Installing MetaTrader 5..."
-    $wine_executable "/config/.wine/drive_c/mt5setup.exe" "/auto" &
-    wait
-    rm -f /config/.wine/drive_c/mt5setup.exe
+    $wine_executable /tmp/mt5setup.exe /auto
+    sleep 30
+    rm -f /tmp/mt5setup.exe
 fi
 
 # Recheck if MetaTrader 5 is installed
