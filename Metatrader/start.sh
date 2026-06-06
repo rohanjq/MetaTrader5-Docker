@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration variables
-mt5file='/config/.wine/drive_c/Program Files/MetaTrader 5/terminal64.exe'
+mt5file='/config/.wine/drive_c/Program Files/PXBT Trading MT5 Terminal/terminal64.exe'
 WINEPREFIX='/config/.wine'
 WINEDEBUG='-all'
 wine_executable="wine"
@@ -9,7 +9,7 @@ metatrader_version="5.0.36"
 mt5server_port="8001"
 MT5_CMD_OPTIONS="${MT5_CMD_OPTIONS:-}"
 mono_url="https://dl.winehq.org/wine/wine-mono/10.3.0/wine-mono-10.3.0-x86.msi"
-python_url="https://www.python.org/ftp/python/3.9.13/python-3.9.13.exe"
+python_url="https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe"
 mt5setup_url="https://download.terminal.free/cdn/web/pxbt.trading.ltd/mt5/pxbttrading5setup.exe"
 
 # Function to display a graphical message
@@ -40,6 +40,13 @@ is_wine_python_package_installed() {
 # Check for necessary dependencies
 check_dependency "curl"
 check_dependency "$wine_executable"
+
+# Initialize Wine prefix if it doesn't exist
+if [ ! -d "$WINEPREFIX/drive_c" ]; then
+    show_message "[0/7] Initializing Wine prefix..."
+    WINEPREFIX=$WINEPREFIX wineboot --init
+    show_message "[0/7] Wine prefix initialized."
+fi
 
 # Install Mono if not present
 if [ ! -e "/config/.wine/drive_c/windows/mono" ]; then
