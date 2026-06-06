@@ -41,15 +41,12 @@ is_wine_python_package_installed() {
 check_dependency "curl"
 check_dependency "$wine_executable"
 
-# Ensure Wine prefix directory exists for downloads
-mkdir -p "$WINEPREFIX/drive_c"
-
 # Install Mono if not present
 if [ ! -e "/config/.wine/drive_c/windows/mono" ]; then
     show_message "[1/7] Downloading and installing Mono..."
-    curl -o "$WINEPREFIX/drive_c/mono.msi" $mono_url
-    WINEDLLOVERRIDES=mscoree=d $wine_executable msiexec /i /config/.wine/drive_c/mono.msi /qn
-    rm /config/.wine/drive_c/mono.msi
+    curl -o /tmp/mono.msi $mono_url
+    WINEDLLOVERRIDES=mscoree=d $wine_executable msiexec /i /tmp/mono.msi /qn
+    rm -f /tmp/mono.msi
     show_message "[1/7] Mono installed."
 else
     show_message "[1/7] Mono is already installed."
