@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration variables
-mt5file='/config/.wine/drive_c/Program Files/MetaTrader 5/terminal64.exe'
+mt5file='/config/.wine/drive_c/Program Files/PXBT Trading MT5 Terminal/terminal64.exe'
 WINEPREFIX='/config/.wine'
 WINEDEBUG='-all'
 wine_executable="wine"
@@ -9,7 +9,7 @@ mt5server_port="8001"
 MT5_CMD_OPTIONS="${MT5_CMD_OPTIONS:-}"
 mono_url="https://dl.winehq.org/wine/wine-mono/10.3.0/wine-mono-10.3.0-x86.msi"
 python_url="https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe"
-mt5setup_url="https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/mt5setup.exe"
+mt5setup_url="https://download.terminal.free/cdn/web/pxbt.trading.ltd/mt5/pxbttrading5setup.exe"
 
 # Function to display a graphical message
 show_message() {
@@ -68,10 +68,7 @@ else
 fi
 
 # Recheck if MetaTrader 5 is installed
-if [ -e "$mt5file" ]; then
-    show_message "[4/7] File $mt5file is installed. Running MT5..."
-    $wine_executable "$mt5file" $MT5_CMD_OPTIONS &
-else
+if [ ! -e "$mt5file" ]; then
     show_message "[4/7] File $mt5file is not installed. MT5 cannot be run."
 fi
 
@@ -105,6 +102,24 @@ fi
 if ! is_wine_python_package_installed "python-dateutil"; then
     show_message "[6/7] Installing python-dateutil library in Windows"
     $wine_executable python -m pip install --no-cache-dir python-dateutil
+fi
+
+# Configure MT5 for API access
+mt5config_dir=$(dirname "$mt5file")/Config
+if [ -d "$mt5config_dir" ]; then
+    show_message "[6/7] Configuring MT5 for API access..."
+    # Ensure common.ini has required settings
+    grep -q "ExpertEnabled" "$mt5config_dir/common.ini" || echo "ExpertEnabled=1" >> "$mt5config_dir/common.ini"
+    grep -q "ExpertDllImport" "$mt5config_dir/common.ini" || echo "ExpertDllImport=1" >> "$mt5config_dir/common.ini"
+    grep -q "ExpertAllowLive" "$mt5config_dir/common.ini" || echo "ExpertAllowLive=1" >> "$mt5config_dir/common.ini"
+fi
+
+# Now launch the terminal (after Python packages are installed)
+if [ -e "$mt5file" ]; then
+    show_message "[6/7] Launching MT5 terminal..."
+    $wine_executable "$mt5file" /portable $MT5_CMD_OPTIONS &
+    sleep 10
+    show_message "[6/7] MT5 terminal launched."
 fi
 
 # Install mt5linux library in Linux if not installed (client-side proxy)
