@@ -1,9 +1,10 @@
-.devcontainer
 .git
-docker-compose.yaml
-README.md
-LICENSE.md
-.gitignore
-.env.example
 .env
+.env.example
+.gitignore
+.dockerignore
+.venv
 config
+data
+__pycache__
+*.md

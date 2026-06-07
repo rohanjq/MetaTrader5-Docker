@@ -1,4 +1,9 @@
 
 .devcontainer/
 .env
+.venv/
 config/
+data/
+__pycache__/
+*.pyc
+*.ex5
