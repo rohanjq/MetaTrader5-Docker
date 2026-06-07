@@ -75,7 +75,7 @@ if [ -d "$WINEPREFIX/drive_c/windows/mono" ]; then
 else
     log "[1/7] Installing Mono..."
     download_if_missing "$MONO_URL" "$DOWNLOADS_DIR/wine-mono.msi"
-    WINEDLLOVERRIDES=mscoree=d $WINE msiexec /i "$DOWNLOADS_DIR/wine-mono.msi" /qn
+    WINEDLLOVERRIDES=mscoree=d $WINE msiexec /i "$DOWNLOADS_DIR/wine-mono.msi" /qn || true
     log "[1/7] Mono installed."
 fi
 
@@ -86,9 +86,9 @@ if [ -e "$MT5_EXE" ]; then
     log "[2/7] MetaTrader 5 already installed, skipping."
 else
     log "[2/7] Installing MetaTrader 5..."
-    $WINE reg add "HKEY_CURRENT_USER\\Software\\Wine" /v Version /t REG_SZ /d "win10" /f
+    $WINE reg add "HKEY_CURRENT_USER\\Software\\Wine" /v Version /t REG_SZ /d "win10" /f || true
     download_if_missing "$MT5_SETUP_URL" "$DOWNLOADS_DIR/mt5setup.exe"
-    $WINE "$DOWNLOADS_DIR/mt5setup.exe" /auto
+    $WINE "$DOWNLOADS_DIR/mt5setup.exe" /auto || true
     sleep 30
     if [ ! -e "$MT5_EXE" ]; then
         log "[2/7] ERROR: MT5 installation failed — $MT5_EXE not found"
@@ -105,7 +105,7 @@ if $WINE python --version 2>/dev/null; then
 else
     log "[3/7] Installing Python in Wine..."
     download_if_missing "$PYTHON_URL" "$DOWNLOADS_DIR/python-installer.exe"
-    $WINE "$DOWNLOADS_DIR/python-installer.exe" /quiet InstallAllUsers=1 PrependPath=1
+    $WINE "$DOWNLOADS_DIR/python-installer.exe" /quiet InstallAllUsers=1 PrependPath=1 || true
     log "[3/7] Python installed in Wine."
 fi
 
