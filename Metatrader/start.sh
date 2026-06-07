@@ -115,17 +115,28 @@ if [ -d "$mt5config_dir" ]; then
     grep -q "ExpertEnabled" "$mt5config_dir/common.ini" || echo "ExpertEnabled=1" >> "$mt5config_dir/common.ini"
     grep -q "ExpertDllImport" "$mt5config_dir/common.ini" || echo "ExpertDllImport=1" >> "$mt5config_dir/common.ini"
     grep -q "ExpertAllowLive" "$mt5config_dir/common.ini" || echo "ExpertAllowLive=1" >> "$mt5config_dir/common.ini"
+
+    # Write account config if credentials are provided
+    if [ -n "$MT5_LOGIN" ] && [ -n "$MT5_PASSWORD" ] && [ -n "$MT5_SERVER" ]; then
+        show_message "[6/7] Writing account credentials to config..."
+        cat > "$mt5config_dir/auto_login.ini" <<EOINI
+[Common]
+Login=$MT5_LOGIN
+Password=$MT5_PASSWORD
+Server=$MT5_SERVER
+EOINI
+    fi
 fi
 
 # Now launch the terminal (after Python packages are installed)
 if [ -e "$mt5file" ]; then
     show_message "[6/7] Launching MT5 terminal..."
     mt5_args="/portable"
-    [ -n "$MT5_LOGIN" ] && mt5_args="$mt5_args /login:$MT5_LOGIN"
-    [ -n "$MT5_PASSWORD" ] && mt5_args="$mt5_args /password:$MT5_PASSWORD"
-    [ -n "$MT5_SERVER" ] && mt5_args="$mt5_args /server:$MT5_SERVER"
+    if [ -f "$mt5config_dir/auto_login.ini" ]; then
+        mt5_args="$mt5_args /config:$mt5config_dir/auto_login.ini"
+    fi
     $wine_executable "$mt5file" $mt5_args $MT5_CMD_OPTIONS &
-    sleep 15
+    sleep 20
     show_message "[6/7] MT5 terminal launched."
 fi
 
