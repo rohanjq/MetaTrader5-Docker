@@ -14,6 +14,7 @@
 //  Format: "TF_minutes:param1:param2, ..." — leave empty to disable
 input string INP_UTBot       = "1:10:2.0, 3:10:2.0, 10:10:2.0, 15:10:2.0, 45:10:2.0"; // UT Bot → TF:ATR_Period:ATR_Mult
 input string INP_DC          = "1:20:0, 3:20:0, 5:20:0, 15:20:0, 45:20:0";             // DC Chan → TF:Length:Offset
+input string INP_LiqGrab     = "3:50:5:2.0:5:100, 5:50:5:2.0:5:100, 15:50:5:2.0:5:100, 60:50:5:2.0:5:200, 240:50:5:2.0:5:200"; // LiqGrab → TF:LookbackRange:BarsN:WickBodyRatio:CandlesBeforeBreakout:MAPeriod
 input int    WriteInterval   = 5;   // File write interval (seconds)
 
 //=== UT Bot state ====================================================
@@ -29,6 +30,16 @@ int    g_dc_tf[MAX_INST];
 int    g_dc_length[MAX_INST];
 int    g_dc_offset[MAX_INST];
 
+//=== Liquidity Grab state ============================================
+int    g_liq_count = 0;
+int    g_liq_tf[MAX_INST];
+int    g_liq_lookback[MAX_INST];      // Range for finding key levels
+int    g_liq_barsN[MAX_INST];         // Bars for rejection confirmation
+double g_liq_wick_ratio[MAX_INST];    // Min wick:body ratio for rejection
+int    g_liq_candles_bk[MAX_INST];    // Lookback for recent rejections before breakout
+int    g_liq_ma_period[MAX_INST];     // MA period for trend filter
+int    g_liq_ma_handle[MAX_INST];
+
 //+------------------------------------------------------------------+
 //| Initialization                                                     |
 //+------------------------------------------------------------------+
@@ -36,6 +47,7 @@ int OnInit()
 {
    ParseUTBotConfig(INP_UTBot);
    ParseDCConfig(INP_DC);
+   ParseLiqGrabConfig(INP_LiqGrab);
 
    for(int i = 0; i < g_utbot_count; i++)
    {
@@ -45,9 +57,17 @@ int OnInit()
          g_utbot_atr_handle[i] = INVALID_HANDLE;
    }
 
+   for(int i = 0; i < g_liq_count; i++)
+   {
+      if(IsNativeTF(g_liq_tf[i]))
+         g_liq_ma_handle[i] = iMA(_Symbol, MinToTF(g_liq_tf[i]), g_liq_ma_period[i], 0, MODE_SMA, PRICE_CLOSE);
+      else
+         g_liq_ma_handle[i] = INVALID_HANDLE;
+   }
+
    EventSetTimer(WriteInterval);
    Print("SignalMaster started: ", _Symbol,
-         " | UTBot[", g_utbot_count, "] DC[", g_dc_count, "]");
+         " | UTBot[", g_utbot_count, "] DC[", g_dc_count, "] LiqGrab[", g_liq_count, "]");
 
    return INIT_SUCCEEDED;
 }
@@ -58,6 +78,9 @@ void OnDeinit(const int reason)
    for(int i = 0; i < g_utbot_count; i++)
       if(g_utbot_atr_handle[i] != INVALID_HANDLE)
          IndicatorRelease(g_utbot_atr_handle[i]);
+   for(int i = 0; i < g_liq_count; i++)
+      if(g_liq_ma_handle[i] != INVALID_HANDLE)
+         IndicatorRelease(g_liq_ma_handle[i]);
 }
 
 void OnTick()  { /* computed on timer only */ }
@@ -72,6 +95,8 @@ void WriteAllSignals()
       WriteUTBotSignal(i);
    for(int i = 0; i < g_dc_count; i++)
       WriteDCSignal(i);
+   for(int i = 0; i < g_liq_count; i++)
+      WriteLiqGrabSignal(i);
 }
 
 //=====================================================================
@@ -112,6 +137,28 @@ void ParseDCConfig(string config)
       g_dc_tf[i]     = (int)StringToInteger(parts[0]);
       g_dc_length[i] = (ArraySize(parts) > 1) ? (int)StringToInteger(parts[1]) : 20;
       g_dc_offset[i] = (ArraySize(parts) > 2) ? (int)StringToInteger(parts[2]) : 0;
+   }
+}
+
+void ParseLiqGrabConfig(string config)
+{
+   if(StringLen(config) == 0) return;
+   string items[];
+   int count = StringSplit(config, ',', items);
+   g_liq_count = MathMin(count, MAX_INST);
+
+   for(int i = 0; i < g_liq_count; i++)
+   {
+      StringTrimLeft(items[i]);
+      StringTrimRight(items[i]);
+      string parts[];
+      StringSplit(items[i], ':', parts);
+      g_liq_tf[i]          = (int)StringToInteger(parts[0]);
+      g_liq_lookback[i]    = (ArraySize(parts) > 1) ? (int)StringToInteger(parts[1]) : 50;
+      g_liq_barsN[i]       = (ArraySize(parts) > 2) ? (int)StringToInteger(parts[2]) : 5;
+      g_liq_wick_ratio[i]  = (ArraySize(parts) > 3) ? StringToDouble(parts[3]) : 2.0;
+      g_liq_candles_bk[i]  = (ArraySize(parts) > 4) ? (int)StringToInteger(parts[4]) : 5;
+      g_liq_ma_period[i]   = (ArraySize(parts) > 5) ? (int)StringToInteger(parts[5]) : 100;
    }
 }
 
@@ -569,5 +616,258 @@ string PriceZone(double pct)
    if(pct <= 10)      return "LOWER";
    if(pct <= 30)      return "LOWER_MID";
    return "MIDDLE";
+}
+
+//=====================================================================
+//  LIQUIDITY GRAB — compute + write
+//=====================================================================
+
+// Find key high: highest high within range that has rejection (local peak)
+double LiqFindKeyHigh(const double &highs[], const double &lows[],
+                      const double &closes[], int total, int barsN, int range)
+{
+   double highestHigh = 0;
+   int limit = MathMin(range, total - barsN);
+   for(int i = barsN; i < limit; i++)
+   {
+      double hi = highs[i];
+      // Check if this bar is the highest in a window of 2*barsN+1
+      bool isPeak = true;
+      for(int j = i - barsN; j <= i + barsN && j < total; j++)
+      {
+         if(j < 0) continue;
+         if(j != i && highs[j] > hi) { isPeak = false; break; }
+      }
+      if(isPeak && hi > highestHigh)
+         return hi;
+      highestHigh = MathMax(highestHigh, hi);
+   }
+   return 99999;
+}
+
+// Find key low: lowest low within range that has rejection (local trough)
+double LiqFindKeyLow(const double &highs[], const double &lows[],
+                     const double &closes[], int total, int barsN, int range)
+{
+   double lowestLow = DBL_MAX;
+   int limit = MathMin(range, total - barsN);
+   for(int i = barsN; i < limit; i++)
+   {
+      double lo = lows[i];
+      bool isTrough = true;
+      for(int j = i - barsN; j <= i + barsN && j < total; j++)
+      {
+         if(j < 0) continue;
+         if(j != i && lows[j] < lo) { isTrough = false; break; }
+      }
+      if(isTrough && lo < lowestLow)
+         return lo;
+      lowestLow = MathMin(lowestLow, lo);
+   }
+   return -1;
+}
+
+// Check if bar at shift is a rejection UP (bullish — lower wick grabs liquidity)
+bool LiqIsRejectionUp(const double &opens[], const double &highs[],
+                      const double &lows[], const double &closes[],
+                      int shift, double wickRatio, double keyLow)
+{
+   double open  = opens[shift];
+   double close = closes[shift];
+   double high  = highs[shift];
+   double low   = lows[shift];
+   double bodySize = MathAbs(close - open);
+   if(bodySize < _Point) return false;
+   double lowerWick = MathMin(open, close) - low;
+   // Wick must be big enough AND candle must sweep below key low but close above it
+   return (lowerWick >= wickRatio * bodySize && low < keyLow && high > keyLow);
+}
+
+// Check if bar at shift is a rejection DOWN (bearish — upper wick grabs liquidity)
+bool LiqIsRejectionDown(const double &opens[], const double &highs[],
+                        const double &lows[], const double &closes[],
+                        int shift, double wickRatio, double keyHigh)
+{
+   double open  = opens[shift];
+   double close = closes[shift];
+   double high  = highs[shift];
+   double low   = lows[shift];
+   double bodySize = MathAbs(close - open);
+   if(bodySize < _Point) return false;
+   double upperWick = high - MathMax(open, close);
+   return (upperWick >= wickRatio * bodySize && high > keyHigh && low < keyHigh);
+}
+
+void WriteLiqGrabSignal(int idx)
+{
+   int    tf_min      = g_liq_tf[idx];
+   int    lookback    = g_liq_lookback[idx];
+   int    barsN       = g_liq_barsN[idx];
+   double wickRatio   = g_liq_wick_ratio[idx];
+   int    candlesBk   = g_liq_candles_bk[idx];
+   int    maPeriod    = g_liq_ma_period[idx];
+
+   int bars_needed = MathMax(lookback, maPeriod) + barsN + 10;
+
+   double opens[], highs[], lows[], closes[];
+   datetime times[];
+   long vols[];
+   int total = 0;
+
+   //--- Get bar data
+   if(IsNativeTF(tf_min))
+   {
+      ENUM_TIMEFRAMES tf = MinToTF(tf_min);
+      MqlRates rates[];
+      ArraySetAsSeries(rates, true);  // [0]=most recent
+      total = CopyRates(_Symbol, tf, 0, bars_needed, rates);
+      if(total < bars_needed) return;
+
+      ArrayResize(opens, total);  ArrayResize(highs, total);
+      ArrayResize(lows, total);   ArrayResize(closes, total);
+      ArrayResize(times, total);  ArrayResize(vols, total);
+
+      for(int i = 0; i < total; i++)
+      {
+         opens[i]  = rates[i].open;   highs[i] = rates[i].high;
+         lows[i]   = rates[i].low;    closes[i] = rates[i].close;
+         times[i]  = rates[i].time;   vols[i]  = rates[i].tick_volume;
+      }
+   }
+   else
+   {
+      // Build synthetic bars (returns non-series: [0]=oldest)
+      double s_opens[], s_highs[], s_lows[], s_closes[];
+      long s_vols[];
+      datetime s_times[];
+      int synth = BuildSyntheticBars(tf_min, bars_needed, s_opens, s_highs, s_lows, s_closes, s_vols, s_times);
+      if(synth < bars_needed) return;
+
+      // Reverse to series order [0]=most recent
+      total = synth;
+      ArrayResize(opens, total);  ArrayResize(highs, total);
+      ArrayResize(lows, total);   ArrayResize(closes, total);
+      ArrayResize(times, total);  ArrayResize(vols, total);
+
+      for(int i = 0; i < total; i++)
+      {
+         int ri = total - 1 - i;
+         opens[i] = s_opens[ri];  highs[i] = s_highs[ri];
+         lows[i]  = s_lows[ri];   closes[i] = s_closes[ri];
+         times[i] = s_times[ri];  vols[i]  = s_vols[ri];
+      }
+   }
+
+   //--- Index 0 = running bar, 1 = last closed bar (series order)
+   //--- Key levels (search from bar 1 onwards — closed bars only)
+   double keyHigh = LiqFindKeyHigh(highs, lows, closes, total, barsN, lookback);
+   double keyLow  = LiqFindKeyLow(highs, lows, closes, total, barsN, lookback);
+
+   //--- Check for recent rejection (liquidity grab) in last N closed candles
+   bool wasRejUp   = false;
+   bool wasRejDown = false;
+   int  rejUpBar   = -1;
+   int  rejDownBar = -1;
+
+   for(int i = 1; i <= candlesBk && i < total; i++)
+   {
+      if(!wasRejUp && LiqIsRejectionUp(opens, highs, lows, closes, i, wickRatio, keyLow))
+      {
+         wasRejUp = true;
+         rejUpBar = i;
+      }
+      if(!wasRejDown && LiqIsRejectionDown(opens, highs, lows, closes, i, wickRatio, keyHigh))
+      {
+         wasRejDown = true;
+         rejDownBar = i;
+      }
+   }
+
+   //--- Breakout detection: price broke past key level on opposite side (short lookback)
+   bool breakoutUp   = false;
+   bool breakoutDown = false;
+   for(int i = 1; i <= candlesBk && i < total; i++)
+   {
+      if(closes[i] > LiqFindKeyHigh(highs, lows, closes, total, barsN, candlesBk + barsN))
+         breakoutUp = true;
+      if(closes[i] < LiqFindKeyLow(highs, lows, closes, total, barsN, candlesBk + barsN))
+         breakoutDown = true;
+   }
+
+   //--- MA trend filter
+   double maValue = 0;
+   if(IsNativeTF(tf_min) && g_liq_ma_handle[idx] != INVALID_HANDLE)
+   {
+      double maBuf[];
+      if(CopyBuffer(g_liq_ma_handle[idx], 0, 1, 1, maBuf) > 0)
+         maValue = maBuf[0];
+   }
+   else
+   {
+      // Manual SMA for synthetic TFs
+      double sum = 0;
+      int count = MathMin(maPeriod, total - 1);
+      for(int i = 1; i <= count; i++) sum += closes[i];
+      if(count > 0) maValue = sum / count;
+   }
+
+   MqlTick tick;
+   if(!SymbolInfoTick(_Symbol, tick)) return;
+
+   string maTrend = (tick.bid > maValue) ? "ABOVE" : "BELOW";
+
+   //--- Composite signal: rejection + breakout + trend alignment
+   string liqSignal = "NONE";
+   if(wasRejUp && breakoutUp && tick.ask > maValue)
+      liqSignal = "BUY";
+   else if(wasRejDown && breakoutDown && tick.bid < maValue)
+      liqSignal = "SELL";
+
+   //--- Running bar proximity to key levels
+   double distToKeyHigh = (keyHigh < 99999) ? highs[0] - keyHigh : 0;
+   double distToKeyLow  = (keyLow > -1) ? lows[0] - keyLow : 0;
+
+   //--- Write CSV
+   string filename = _Symbol + "_liqgrab_" + TFToString(tf_min) + ".csv";
+   int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+   if(handle == INVALID_HANDLE) return;
+
+   WriteStdHeader(handle, "liqgrab", tf_min);
+
+   // Running + closed bar
+   WriteBarFields(handle, "running", opens[0], highs[0], lows[0], closes[0], times[0], vols[0]);
+   WriteBarFields(handle, "closed",  opens[1], highs[1], lows[1], closes[1], times[1], vols[1]);
+
+   // Key levels
+   FileWrite(handle, "key_high",                (keyHigh < 99999) ? DoubleToString(keyHigh, _Digits) : "NONE");
+   FileWrite(handle, "key_low",                 (keyLow > -1) ? DoubleToString(keyLow, _Digits) : "NONE");
+   FileWrite(handle, "dist_to_key_high",        DoubleToString(distToKeyHigh, _Digits));
+   FileWrite(handle, "dist_to_key_low",         DoubleToString(distToKeyLow, _Digits));
+
+   // Liquidity grab detection
+   FileWrite(handle, "rejection_up",            wasRejUp ? "TRUE" : "FALSE");
+   FileWrite(handle, "rejection_up_bar",        IntegerToString(rejUpBar));
+   FileWrite(handle, "rejection_down",          wasRejDown ? "TRUE" : "FALSE");
+   FileWrite(handle, "rejection_down_bar",      IntegerToString(rejDownBar));
+
+   // Breakout
+   FileWrite(handle, "breakout_up",             breakoutUp ? "TRUE" : "FALSE");
+   FileWrite(handle, "breakout_down",           breakoutDown ? "TRUE" : "FALSE");
+
+   // Trend filter
+   FileWrite(handle, "ma_value",                DoubleToString(maValue, _Digits));
+   FileWrite(handle, "ma_trend",                maTrend);
+
+   // Composite signal
+   FileWrite(handle, "liq_signal",              liqSignal);
+
+   // Config echo
+   FileWrite(handle, "cfg_lookback",            IntegerToString(lookback));
+   FileWrite(handle, "cfg_barsN",               IntegerToString(barsN));
+   FileWrite(handle, "cfg_wick_ratio",          DoubleToString(wickRatio, 1));
+   FileWrite(handle, "cfg_candles_bk",          IntegerToString(candlesBk));
+   FileWrite(handle, "cfg_ma_period",           IntegerToString(maPeriod));
+
+   FileClose(handle);
 }
 //+------------------------------------------------------------------+
