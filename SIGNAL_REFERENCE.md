@@ -51,6 +51,65 @@ BTCUSDT_liqgrab_H4.csv
 ```
 Config per instance: `TF:LookbackRange:BarsN:WickBodyRatio:CandlesBeforeBreakout:MAPeriod` (defaults `50:5:2.0:5:100`)
 
+### EMA (`ema`)
+```
+BTCUSDT_ema9_M1.csv
+BTCUSDT_ema21_M1.csv
+BTCUSDT_ema50_M1.csv
+BTCUSDT_ema200_M1.csv
+BTCUSDT_ema20_M3.csv
+BTCUSDT_ema50_M5.csv
+BTCUSDT_ema200_M5.csv
+BTCUSDT_ema50_M15.csv
+BTCUSDT_ema200_M15.csv
+```
+Config per instance: `TF:Period` (e.g. `1:9` = M1 with 9-period EMA)
+
+### RSI (`rsi`)
+```
+BTCUSDT_rsi14_M1.csv
+BTCUSDT_rsi2_M1.csv
+BTCUSDT_rsi14_M3.csv
+BTCUSDT_rsi14_M5.csv
+```
+Config per instance: `TF:Period` (e.g. `1:14` = M1 with 14-period RSI)
+
+### Bollinger Bands (`bb`)
+```
+BTCUSDT_bb_M1.csv
+BTCUSDT_bb_M3.csv
+BTCUSDT_bb_M5.csv
+```
+Config per instance: `TF:Period:Deviation` (e.g. `1:20:2.0` = M1 with 20-period, 2.0 std dev)
+
+### ADX (`adx`)
+```
+BTCUSDT_adx_M5.csv
+BTCUSDT_adx_M15.csv
+```
+Config per instance: `TF:Period` (e.g. `5:14` = M5 with 14-period ADX)
+
+### MACD (`macd`)
+```
+BTCUSDT_macd_M1.csv
+BTCUSDT_macd_M3.csv
+```
+Config per instance: `TF:Fast:Slow:Signal` (e.g. `1:12:26:9` = M1 standard MACD)
+
+### Stochastic (`stoch`)
+```
+BTCUSDT_stoch_M3.csv
+```
+Config per instance: `TF:K:D:Slowing` (e.g. `3:5:3:3` = M3 with %K=5, %D=3, slowing=3)
+
+### ATR standalone (`atr`)
+```
+BTCUSDT_atr_M1.csv
+BTCUSDT_atr_M3.csv
+BTCUSDT_atr_M5.csv
+```
+Config per instance: `TF:Period` (e.g. `1:14` = M1 with 14-period ATR)
+
 ---
 
 ## Standard Header (every file)
@@ -213,6 +272,230 @@ cfg_ma_period            → MA period for trend filter (e.g. 100)
 3. Look for breakout = after the rejection, price breaks through the opposite key level
 4. Filter by trend = price must be on the right side of the MA (above MA for buy, below for sell)
 5. All 3 conditions met → composite signal fires
+
+---
+
+## EMA Fields
+
+Computes Exponential Moving Average. Detects price position relative to EMA, distance, and slope direction.
+
+```
+running_ema              → EMA value on current forming bar
+running_price_vs_ema     → ABOVE or BELOW (bid vs EMA)
+running_dist             → bid - EMA (positive = above, negative = below)
+running_dist_pct         → distance as % of EMA value
+
+closed_ema               → EMA value on last closed bar
+closed_price_vs_ema      → ABOVE or BELOW (close vs EMA)
+
+ema_slope                → RISING, FALLING, or FLAT (EMA direction over last 3 bars)
+ema_slope_value          → raw slope value (EMA[0] - EMA[3])
+
+cfg_period               → EMA period (e.g. 9, 21, 50, 200)
+```
+
+**Usage patterns:**
+- `closed_price_vs_ema=ABOVE` + `ema_slope=RISING` → bullish trend confirmed
+- `running_dist_pct` close to 0 → price at EMA (pullback entry zone)
+- Compare multiple EMAs (e.g. ema9 vs ema21) for crossover detection in Python
+
+---
+
+## RSI Fields
+
+Computes Relative Strength Index. Classifies into zones and detects key level crosses.
+
+```
+running_rsi              → RSI value on current forming bar
+running_zone             → zone classification (see below)
+
+closed_rsi               → RSI value on last closed bar
+closed_zone              → zone classification
+closed_prev_rsi          → RSI value on bar before closed (for cross detection)
+closed_cross             → level cross event on closed bar (see below)
+
+cfg_period               → RSI period (e.g. 14, 2)
+```
+
+**RSI zones** (based on RSI value):
+- `EXTREME_OB`: >= 80
+- `OVERBOUGHT`: 70-79
+- `BULLISH`: 55-69
+- `NEUTRAL`: 45-54
+- `BEARISH`: 30-44
+- `OVERSOLD`: 20-29
+- `EXTREME_OS`: < 20
+
+**Cross events** (detected on closed bar vs previous bar):
+- `CROSS_UP_30` → RSI crossed above 30 (leaving oversold)
+- `CROSS_DOWN_70` → RSI crossed below 70 (leaving overbought)
+- `CROSS_UP_50` → RSI crossed above 50 (bullish momentum shift)
+- `CROSS_DOWN_50` → RSI crossed below 50 (bearish momentum shift)
+- `CROSS_UP_52` → RSI crossed above 52 (used by some scalping strategies)
+- `NONE` → no cross detected
+
+---
+
+## Bollinger Bands Fields
+
+Computes Bollinger Bands (upper, middle, lower). Detects band touches, outside closes, and re-entries.
+
+```
+upper_band               → upper band value (running bar)
+middle_band              → middle band (SMA)
+lower_band               → lower band value
+band_width               → upper - lower (absolute width)
+
+running_pct_in_band      → 0-100 (where bid sits within bands, 0=lower, 100=upper)
+running_above_upper      → TRUE if bid > upper band
+running_below_lower      → TRUE if bid < lower band
+
+closed_pct_in_band       → 0-100 for closed bar
+closed_above_upper       → TRUE if close > upper band
+closed_below_lower       → TRUE if close < lower band
+closed_reenter_from_below → TRUE if bar opened below lower band but closed above it (bullish reversal)
+closed_reenter_from_above → TRUE if bar opened above upper band but closed below it (bearish reversal)
+
+cfg_period               → BB period (e.g. 20)
+cfg_deviation            → BB standard deviation multiplier (e.g. 2.0)
+```
+
+**Usage patterns:**
+- `closed_below_lower=TRUE` → price closed outside lower band (mean reversion setup)
+- `closed_reenter_from_below=TRUE` → bullish reversal signal (range fade entry)
+- `band_width` shrinking → squeeze forming, breakout likely
+- `running_pct_in_band` near 50 → price at middle band
+
+---
+
+## ADX Fields
+
+Computes Average Directional Index with +DI and -DI. Measures trend strength and direction.
+
+```
+running_adx              → ADX value on current bar
+running_plus_di          → +DI value (bullish directional)
+running_minus_di         → -DI value (bearish directional)
+
+closed_adx               → ADX on last closed bar
+closed_plus_di           → +DI confirmed
+closed_minus_di          → -DI confirmed
+closed_trend_strength    → trend classification (see below)
+closed_adx_rising        → TRUE if ADX rising over last 3 bars (trend strengthening)
+closed_di_bias           → BULLISH (+DI > -DI) or BEARISH (-DI > +DI)
+
+cfg_period               → ADX period (e.g. 14)
+```
+
+**Trend strength levels** (based on closed ADX value):
+- `RANGING`: ADX < 18 (no trend, avoid trend-following)
+- `WEAK_TREND`: 18-24 (emerging trend)
+- `TRENDING`: 25-39 (confirmed trend)
+- `STRONG_TREND`: >= 40 (powerful trend)
+
+**Usage patterns:**
+- `closed_trend_strength=RANGING` → use mean reversion strategies
+- `closed_trend_strength=TRENDING` + `closed_di_bias=BULLISH` → confirmed uptrend
+- `closed_adx_rising=TRUE` → trend is strengthening (momentum entry)
+
+---
+
+## MACD Fields
+
+Computes MACD line, signal line, and histogram. Detects histogram flips and zero-line crosses.
+
+```
+running_macd             → MACD line value (current bar)
+running_signal           → signal line value
+running_histogram        → MACD - signal (histogram bar)
+
+closed_macd              → MACD line (confirmed)
+closed_signal            → signal line (confirmed)
+closed_histogram         → histogram value (confirmed)
+closed_hist_cross        → histogram cross event (see below)
+closed_zero_cross        → MACD zero-line cross event (see below)
+
+cfg_fast                 → fast EMA period (e.g. 12)
+cfg_slow                 → slow EMA period (e.g. 26)
+cfg_signal               → signal SMA period (e.g. 9)
+```
+
+**Histogram cross events:**
+- `BULLISH_FLIP` → histogram crossed from negative to positive (MACD crossed above signal)
+- `BEARISH_FLIP` → histogram crossed from positive to negative (MACD crossed below signal)
+- `NONE` → no cross
+
+**Zero-line cross events:**
+- `CROSS_ABOVE` → MACD line crossed above zero (bullish momentum)
+- `CROSS_BELOW` → MACD line crossed below zero (bearish momentum)
+- `NONE` → no cross
+
+**Usage patterns:**
+- `closed_hist_cross=BULLISH_FLIP` → classic buy signal
+- `closed_histogram` increasing → momentum building
+- `closed_zero_cross=CROSS_ABOVE` → strong bullish confirmation
+
+---
+
+## Stochastic Fields
+
+Computes Stochastic Oscillator (%K and %D). Detects overbought/oversold zones and K/D crosses.
+
+```
+running_k                → %K value (current bar)
+running_d                → %D value (signal line)
+
+closed_k                 → %K confirmed
+closed_d                 → %D confirmed
+closed_zone              → OVERBOUGHT (K>=80), OVERSOLD (K<=20), or NEUTRAL
+closed_cross             → K/D cross event (see below)
+
+cfg_k_period             → %K period (e.g. 5)
+cfg_d_period             → %D period (e.g. 3)
+cfg_slowing              → slowing period (e.g. 3)
+```
+
+**Cross events:**
+- `BULLISH_OS` → %K crossed above %D while below 25 (strongest buy signal — oversold cross)
+- `BULLISH` → %K crossed above %D (general bullish cross)
+- `BEARISH_OB` → %K crossed below %D while above 75 (strongest sell signal — overbought cross)
+- `BEARISH` → %K crossed below %D (general bearish cross)
+- `NONE` → no cross
+
+**Usage patterns:**
+- `closed_cross=BULLISH_OS` → high-probability long entry (K crosses D in oversold)
+- `closed_zone=OVERSOLD` + waiting for `BULLISH_OS` → re-entry setup
+- Combine with ADX trend filter: only take `BULLISH_OS` when `closed_di_bias=BULLISH`
+
+---
+
+## ATR Fields (standalone)
+
+Computes Average True Range with SMA smoothing for volatility regime detection.
+Note: ATR is also used internally by UT Bot, but these are standalone ATR instances.
+
+```
+running_atr              → ATR value (current bar)
+running_atr_pct          → ATR as % of price (normalized volatility)
+closed_atr               → ATR confirmed (last closed bar)
+atr_sma20                → 20-bar simple moving average of ATR
+atr_vs_sma_ratio         → running_atr / atr_sma20 (>1 = above average volatility)
+volatility_state         → regime classification (see below)
+
+cfg_period               → ATR period (e.g. 14)
+```
+
+**Volatility states** (based on ATR vs its 20-bar SMA ratio):
+- `EXPANDING`: ratio > 1.2 (volatility surging — breakout or panic)
+- `ABOVE_AVG`: ratio 1.0-1.2 (above normal — active market)
+- `BELOW_AVG`: ratio 0.8-1.0 (below normal — quiet market)
+- `CONTRACTING`: ratio < 0.8 (volatility drying up — squeeze forming)
+
+**Usage patterns:**
+- `volatility_state=CONTRACTING` → squeeze setup, expect breakout
+- `volatility_state=EXPANDING` → widen stops, avoid mean reversion
+- `running_atr_pct` → use for position sizing (higher ATR% = smaller position)
+- `running_atr` → use for stop-loss distance (e.g. 1.5 × ATR)
 
 ---
 
