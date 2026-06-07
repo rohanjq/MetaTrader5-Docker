@@ -7,7 +7,7 @@
 #property version   "2.00"
 #property strict
 
-#define MAX_INST    10
+#define MAX_INST    20
 #define LOOKBACK    500
 
 //=== Input Parameters ================================================
@@ -15,6 +15,13 @@
 input string INP_UTBot       = "1:10:2.0, 3:10:2.0, 10:10:2.0, 15:10:2.0, 45:10:2.0"; // UT Bot → TF:ATR_Period:ATR_Mult
 input string INP_DC          = "1:20:0, 3:20:0, 5:20:0, 15:20:0, 45:20:0";             // DC Chan → TF:Length:Offset
 input string INP_LiqGrab     = "3:50:5:2.0:5:100, 5:50:5:2.0:5:100, 15:50:5:2.0:5:100, 60:50:5:2.0:5:200, 240:50:5:2.0:5:200"; // LiqGrab → TF:LookbackRange:BarsN:WickBodyRatio:CandlesBeforeBreakout:MAPeriod
+input string INP_EMA         = "1:9, 1:21, 1:50, 1:200, 3:20, 5:50, 5:200, 15:50, 15:200"; // EMA → TF:Period
+input string INP_RSI         = "1:14, 1:2, 3:14, 5:14";                                    // RSI → TF:Period
+input string INP_BB          = "1:20:2.0, 3:20:2.0, 5:20:2.0";                             // Bollinger → TF:Period:Deviation
+input string INP_ADX         = "5:14, 15:14";                                               // ADX → TF:Period
+input string INP_MACD        = "1:12:26:9, 3:12:26:9";                                      // MACD → TF:Fast:Slow:Signal
+input string INP_STOCH       = "3:5:3:3";                                                    // Stochastic → TF:K:D:Slowing
+input string INP_ATR         = "1:14, 3:14, 5:14";                                          // ATR → TF:Period
 input int    WriteInterval   = 5;   // File write interval (seconds)
 
 //=== UT Bot state ====================================================
@@ -40,6 +47,53 @@ int    g_liq_candles_bk[MAX_INST];    // Lookback for recent rejections before b
 int    g_liq_ma_period[MAX_INST];     // MA period for trend filter
 int    g_liq_ma_handle[MAX_INST];
 
+//=== EMA state =======================================================
+int    g_ema_count = 0;
+int    g_ema_tf[MAX_INST];
+int    g_ema_period[MAX_INST];
+int    g_ema_handle[MAX_INST];
+
+//=== RSI state =======================================================
+int    g_rsi_count = 0;
+int    g_rsi_tf[MAX_INST];
+int    g_rsi_period[MAX_INST];
+int    g_rsi_handle[MAX_INST];
+
+//=== Bollinger Bands state ===========================================
+int    g_bb_count = 0;
+int    g_bb_tf[MAX_INST];
+int    g_bb_period[MAX_INST];
+double g_bb_deviation[MAX_INST];
+int    g_bb_handle[MAX_INST];
+
+//=== ADX state =======================================================
+int    g_adx_count = 0;
+int    g_adx_tf[MAX_INST];
+int    g_adx_period[MAX_INST];
+int    g_adx_handle[MAX_INST];
+
+//=== MACD state ======================================================
+int    g_macd_count = 0;
+int    g_macd_tf[MAX_INST];
+int    g_macd_fast[MAX_INST];
+int    g_macd_slow[MAX_INST];
+int    g_macd_signal[MAX_INST];
+int    g_macd_handle[MAX_INST];
+
+//=== Stochastic state ================================================
+int    g_stoch_count = 0;
+int    g_stoch_tf[MAX_INST];
+int    g_stoch_k[MAX_INST];
+int    g_stoch_d[MAX_INST];
+int    g_stoch_slowing[MAX_INST];
+int    g_stoch_handle[MAX_INST];
+
+//=== ATR state (standalone) ==========================================
+int    g_atr_count = 0;
+int    g_atr_tf[MAX_INST];
+int    g_atr_period[MAX_INST];
+int    g_atr_handle[MAX_INST];
+
 //+------------------------------------------------------------------+
 //| Initialization                                                     |
 //+------------------------------------------------------------------+
@@ -48,6 +102,13 @@ int OnInit()
    ParseUTBotConfig(INP_UTBot);
    ParseDCConfig(INP_DC);
    ParseLiqGrabConfig(INP_LiqGrab);
+   ParseEMAConfig(INP_EMA);
+   ParseRSIConfig(INP_RSI);
+   ParseBBConfig(INP_BB);
+   ParseADXConfig(INP_ADX);
+   ParseMACDConfig(INP_MACD);
+   ParseStochConfig(INP_STOCH);
+   ParseATRConfig(INP_ATR);
 
    for(int i = 0; i < g_utbot_count; i++)
    {
@@ -65,9 +126,33 @@ int OnInit()
          g_liq_ma_handle[i] = INVALID_HANDLE;
    }
 
+   for(int i = 0; i < g_ema_count; i++)
+      g_ema_handle[i] = iMA(_Symbol, MinToTF(g_ema_tf[i]), g_ema_period[i], 0, MODE_EMA, PRICE_CLOSE);
+
+   for(int i = 0; i < g_rsi_count; i++)
+      g_rsi_handle[i] = iRSI(_Symbol, MinToTF(g_rsi_tf[i]), g_rsi_period[i], PRICE_CLOSE);
+
+   for(int i = 0; i < g_bb_count; i++)
+      g_bb_handle[i] = iBands(_Symbol, MinToTF(g_bb_tf[i]), g_bb_period[i], 0, g_bb_deviation[i], PRICE_CLOSE);
+
+   for(int i = 0; i < g_adx_count; i++)
+      g_adx_handle[i] = iADX(_Symbol, MinToTF(g_adx_tf[i]), g_adx_period[i]);
+
+   for(int i = 0; i < g_macd_count; i++)
+      g_macd_handle[i] = iMACD(_Symbol, MinToTF(g_macd_tf[i]), g_macd_fast[i], g_macd_slow[i], g_macd_signal[i], PRICE_CLOSE);
+
+   for(int i = 0; i < g_stoch_count; i++)
+      g_stoch_handle[i] = iStochastic(_Symbol, MinToTF(g_stoch_tf[i]), g_stoch_k[i], g_stoch_d[i], g_stoch_slowing[i], MODE_SMA, STO_LOWHIGH);
+
+   for(int i = 0; i < g_atr_count; i++)
+      g_atr_handle[i] = iATR(_Symbol, MinToTF(g_atr_tf[i]), g_atr_period[i]);
+
    EventSetTimer(WriteInterval);
    Print("SignalMaster started: ", _Symbol,
-         " | UTBot[", g_utbot_count, "] DC[", g_dc_count, "] LiqGrab[", g_liq_count, "]");
+         " | UTBot[", g_utbot_count, "] DC[", g_dc_count, "] LiqGrab[", g_liq_count,
+         "] EMA[", g_ema_count, "] RSI[", g_rsi_count, "] BB[", g_bb_count,
+         "] ADX[", g_adx_count, "] MACD[", g_macd_count, "] Stoch[", g_stoch_count,
+         "] ATR[", g_atr_count, "]");
 
    return INIT_SUCCEEDED;
 }
@@ -81,6 +166,20 @@ void OnDeinit(const int reason)
    for(int i = 0; i < g_liq_count; i++)
       if(g_liq_ma_handle[i] != INVALID_HANDLE)
          IndicatorRelease(g_liq_ma_handle[i]);
+   for(int i = 0; i < g_ema_count; i++)
+      IndicatorRelease(g_ema_handle[i]);
+   for(int i = 0; i < g_rsi_count; i++)
+      IndicatorRelease(g_rsi_handle[i]);
+   for(int i = 0; i < g_bb_count; i++)
+      IndicatorRelease(g_bb_handle[i]);
+   for(int i = 0; i < g_adx_count; i++)
+      IndicatorRelease(g_adx_handle[i]);
+   for(int i = 0; i < g_macd_count; i++)
+      IndicatorRelease(g_macd_handle[i]);
+   for(int i = 0; i < g_stoch_count; i++)
+      IndicatorRelease(g_stoch_handle[i]);
+   for(int i = 0; i < g_atr_count; i++)
+      IndicatorRelease(g_atr_handle[i]);
 }
 
 void OnTick()  { /* computed on timer only */ }
@@ -97,6 +196,20 @@ void WriteAllSignals()
       WriteDCSignal(i);
    for(int i = 0; i < g_liq_count; i++)
       WriteLiqGrabSignal(i);
+   for(int i = 0; i < g_ema_count; i++)
+      WriteEMASignal(i);
+   for(int i = 0; i < g_rsi_count; i++)
+      WriteRSISignal(i);
+   for(int i = 0; i < g_bb_count; i++)
+      WriteBBSignal(i);
+   for(int i = 0; i < g_adx_count; i++)
+      WriteADXSignal(i);
+   for(int i = 0; i < g_macd_count; i++)
+      WriteMACDSignal(i);
+   for(int i = 0; i < g_stoch_count; i++)
+      WriteStochSignal(i);
+   for(int i = 0; i < g_atr_count; i++)
+      WriteATRSignal(i);
 }
 
 //=====================================================================
@@ -159,6 +272,123 @@ void ParseLiqGrabConfig(string config)
       g_liq_wick_ratio[i]  = (ArraySize(parts) > 3) ? StringToDouble(parts[3]) : 2.0;
       g_liq_candles_bk[i]  = (ArraySize(parts) > 4) ? (int)StringToInteger(parts[4]) : 5;
       g_liq_ma_period[i]   = (ArraySize(parts) > 5) ? (int)StringToInteger(parts[5]) : 100;
+   }
+}
+
+void ParseEMAConfig(string config)
+{
+   if(StringLen(config) == 0) return;
+   string items[];
+   int count = StringSplit(config, ',', items);
+   g_ema_count = MathMin(count, MAX_INST);
+   for(int i = 0; i < g_ema_count; i++)
+   {
+      StringTrimLeft(items[i]); StringTrimRight(items[i]);
+      string parts[];
+      StringSplit(items[i], ':', parts);
+      g_ema_tf[i]     = (int)StringToInteger(parts[0]);
+      g_ema_period[i] = (ArraySize(parts) > 1) ? (int)StringToInteger(parts[1]) : 20;
+   }
+}
+
+void ParseRSIConfig(string config)
+{
+   if(StringLen(config) == 0) return;
+   string items[];
+   int count = StringSplit(config, ',', items);
+   g_rsi_count = MathMin(count, MAX_INST);
+   for(int i = 0; i < g_rsi_count; i++)
+   {
+      StringTrimLeft(items[i]); StringTrimRight(items[i]);
+      string parts[];
+      StringSplit(items[i], ':', parts);
+      g_rsi_tf[i]     = (int)StringToInteger(parts[0]);
+      g_rsi_period[i] = (ArraySize(parts) > 1) ? (int)StringToInteger(parts[1]) : 14;
+   }
+}
+
+void ParseBBConfig(string config)
+{
+   if(StringLen(config) == 0) return;
+   string items[];
+   int count = StringSplit(config, ',', items);
+   g_bb_count = MathMin(count, MAX_INST);
+   for(int i = 0; i < g_bb_count; i++)
+   {
+      StringTrimLeft(items[i]); StringTrimRight(items[i]);
+      string parts[];
+      StringSplit(items[i], ':', parts);
+      g_bb_tf[i]        = (int)StringToInteger(parts[0]);
+      g_bb_period[i]    = (ArraySize(parts) > 1) ? (int)StringToInteger(parts[1]) : 20;
+      g_bb_deviation[i] = (ArraySize(parts) > 2) ? StringToDouble(parts[2]) : 2.0;
+   }
+}
+
+void ParseADXConfig(string config)
+{
+   if(StringLen(config) == 0) return;
+   string items[];
+   int count = StringSplit(config, ',', items);
+   g_adx_count = MathMin(count, MAX_INST);
+   for(int i = 0; i < g_adx_count; i++)
+   {
+      StringTrimLeft(items[i]); StringTrimRight(items[i]);
+      string parts[];
+      StringSplit(items[i], ':', parts);
+      g_adx_tf[i]     = (int)StringToInteger(parts[0]);
+      g_adx_period[i] = (ArraySize(parts) > 1) ? (int)StringToInteger(parts[1]) : 14;
+   }
+}
+
+void ParseMACDConfig(string config)
+{
+   if(StringLen(config) == 0) return;
+   string items[];
+   int count = StringSplit(config, ',', items);
+   g_macd_count = MathMin(count, MAX_INST);
+   for(int i = 0; i < g_macd_count; i++)
+   {
+      StringTrimLeft(items[i]); StringTrimRight(items[i]);
+      string parts[];
+      StringSplit(items[i], ':', parts);
+      g_macd_tf[i]     = (int)StringToInteger(parts[0]);
+      g_macd_fast[i]   = (ArraySize(parts) > 1) ? (int)StringToInteger(parts[1]) : 12;
+      g_macd_slow[i]   = (ArraySize(parts) > 2) ? (int)StringToInteger(parts[2]) : 26;
+      g_macd_signal[i] = (ArraySize(parts) > 3) ? (int)StringToInteger(parts[3]) : 9;
+   }
+}
+
+void ParseStochConfig(string config)
+{
+   if(StringLen(config) == 0) return;
+   string items[];
+   int count = StringSplit(config, ',', items);
+   g_stoch_count = MathMin(count, MAX_INST);
+   for(int i = 0; i < g_stoch_count; i++)
+   {
+      StringTrimLeft(items[i]); StringTrimRight(items[i]);
+      string parts[];
+      StringSplit(items[i], ':', parts);
+      g_stoch_tf[i]      = (int)StringToInteger(parts[0]);
+      g_stoch_k[i]       = (ArraySize(parts) > 1) ? (int)StringToInteger(parts[1]) : 5;
+      g_stoch_d[i]       = (ArraySize(parts) > 2) ? (int)StringToInteger(parts[2]) : 3;
+      g_stoch_slowing[i] = (ArraySize(parts) > 3) ? (int)StringToInteger(parts[3]) : 3;
+   }
+}
+
+void ParseATRConfig(string config)
+{
+   if(StringLen(config) == 0) return;
+   string items[];
+   int count = StringSplit(config, ',', items);
+   g_atr_count = MathMin(count, MAX_INST);
+   for(int i = 0; i < g_atr_count; i++)
+   {
+      StringTrimLeft(items[i]); StringTrimRight(items[i]);
+      string parts[];
+      StringSplit(items[i], ':', parts);
+      g_atr_tf[i]     = (int)StringToInteger(parts[0]);
+      g_atr_period[i] = (ArraySize(parts) > 1) ? (int)StringToInteger(parts[1]) : 14;
    }
 }
 
@@ -868,6 +1098,410 @@ void WriteLiqGrabSignal(int idx)
    FileWrite(handle, "cfg_candles_bk",          IntegerToString(candlesBk));
    FileWrite(handle, "cfg_ma_period",           IntegerToString(maPeriod));
 
+   FileClose(handle);
+}
+
+//=====================================================================
+//  EMA — compute + write
+//=====================================================================
+void WriteEMASignal(int idx)
+{
+   int tf_min = g_ema_tf[idx];
+   int period = g_ema_period[idx];
+   ENUM_TIMEFRAMES tf = MinToTF(tf_min);
+
+   double ema_buf[];
+   ArraySetAsSeries(ema_buf, true);
+   if(CopyBuffer(g_ema_handle[idx], 0, 0, 6, ema_buf) < 6) return;
+
+   MqlRates rates[];
+   ArraySetAsSeries(rates, true);
+   if(CopyRates(_Symbol, tf, 0, 2, rates) < 2) return;
+
+   MqlTick tick;
+   if(!SymbolInfoTick(_Symbol, tick)) return;
+
+   string price_vs_ema = (tick.bid > ema_buf[0]) ? "ABOVE" : "BELOW";
+   double slope = ema_buf[0] - ema_buf[3]; // slope over 3 bars
+   string slope_dir = (slope > 0) ? "RISING" : (slope < 0) ? "FALLING" : "FLAT";
+   double dist = tick.bid - ema_buf[0];
+   double dist_pct = (ema_buf[0] > 0) ? (dist / ema_buf[0]) * 100.0 : 0;
+
+   // Closed bar vs EMA
+   string closed_vs_ema = (rates[1].close > ema_buf[1]) ? "ABOVE" : "BELOW";
+
+   string filename = _Symbol + "_ema" + IntegerToString(period) + "_" + TFToString(tf_min) + ".csv";
+   int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+   if(handle == INVALID_HANDLE) return;
+
+   WriteStdHeader(handle, "ema", tf_min);
+   WriteBarFields(handle, "running", rates[0].open, rates[0].high, rates[0].low, rates[0].close, rates[0].time, rates[0].tick_volume);
+   WriteBarFields(handle, "closed",  rates[1].open, rates[1].high, rates[1].low, rates[1].close, rates[1].time, rates[1].tick_volume);
+
+   FileWrite(handle, "running_ema",           DoubleToString(ema_buf[0], _Digits));
+   FileWrite(handle, "running_price_vs_ema",  price_vs_ema);
+   FileWrite(handle, "running_dist",          DoubleToString(dist, _Digits));
+   FileWrite(handle, "running_dist_pct",      DoubleToString(dist_pct, 4));
+
+   FileWrite(handle, "closed_ema",            DoubleToString(ema_buf[1], _Digits));
+   FileWrite(handle, "closed_price_vs_ema",   closed_vs_ema);
+
+   FileWrite(handle, "ema_slope",             slope_dir);
+   FileWrite(handle, "ema_slope_value",       DoubleToString(slope, _Digits));
+
+   FileWrite(handle, "cfg_period",            IntegerToString(period));
+   FileClose(handle);
+}
+
+//=====================================================================
+//  RSI — compute + write
+//=====================================================================
+void WriteRSISignal(int idx)
+{
+   int tf_min = g_rsi_tf[idx];
+   int period = g_rsi_period[idx];
+   ENUM_TIMEFRAMES tf = MinToTF(tf_min);
+
+   double rsi_buf[];
+   ArraySetAsSeries(rsi_buf, true);
+   if(CopyBuffer(g_rsi_handle[idx], 0, 0, 4, rsi_buf) < 4) return;
+
+   MqlRates rates[];
+   ArraySetAsSeries(rates, true);
+   if(CopyRates(_Symbol, tf, 0, 2, rates) < 2) return;
+
+   string running_zone = RSIZone(rsi_buf[0]);
+   string closed_zone  = RSIZone(rsi_buf[1]);
+
+   // Cross detection on closed bars
+   string closed_cross = "NONE";
+   if(rsi_buf[2] < 30 && rsi_buf[1] >= 30)       closed_cross = "CROSS_UP_30";
+   else if(rsi_buf[2] > 70 && rsi_buf[1] <= 70)   closed_cross = "CROSS_DOWN_70";
+   else if(rsi_buf[2] < 50 && rsi_buf[1] >= 50)   closed_cross = "CROSS_UP_50";
+   else if(rsi_buf[2] > 50 && rsi_buf[1] <= 50)   closed_cross = "CROSS_DOWN_50";
+   else if(rsi_buf[2] < 52 && rsi_buf[1] >= 52)   closed_cross = "CROSS_UP_52";
+
+   string filename = _Symbol + "_rsi" + IntegerToString(period) + "_" + TFToString(tf_min) + ".csv";
+   int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+   if(handle == INVALID_HANDLE) return;
+
+   WriteStdHeader(handle, "rsi", tf_min);
+   WriteBarFields(handle, "running", rates[0].open, rates[0].high, rates[0].low, rates[0].close, rates[0].time, rates[0].tick_volume);
+   WriteBarFields(handle, "closed",  rates[1].open, rates[1].high, rates[1].low, rates[1].close, rates[1].time, rates[1].tick_volume);
+
+   FileWrite(handle, "running_rsi",           DoubleToString(rsi_buf[0], 2));
+   FileWrite(handle, "running_zone",          running_zone);
+   FileWrite(handle, "closed_rsi",            DoubleToString(rsi_buf[1], 2));
+   FileWrite(handle, "closed_zone",           closed_zone);
+   FileWrite(handle, "closed_prev_rsi",       DoubleToString(rsi_buf[2], 2));
+   FileWrite(handle, "closed_cross",          closed_cross);
+
+   FileWrite(handle, "cfg_period",            IntegerToString(period));
+   FileClose(handle);
+}
+
+string RSIZone(double val)
+{
+   if(val >= 80) return "EXTREME_OB";
+   if(val >= 70) return "OVERBOUGHT";
+   if(val >= 55) return "BULLISH";
+   if(val >= 45) return "NEUTRAL";
+   if(val >= 30) return "BEARISH";
+   if(val >= 20) return "OVERSOLD";
+   return "EXTREME_OS";
+}
+
+//=====================================================================
+//  BOLLINGER BANDS — compute + write
+//=====================================================================
+void WriteBBSignal(int idx)
+{
+   int tf_min = g_bb_tf[idx];
+   ENUM_TIMEFRAMES tf = MinToTF(tf_min);
+
+   // Buffer 0 = middle, 1 = upper, 2 = lower
+   double mid_buf[], upper_buf[], lower_buf[];
+   ArraySetAsSeries(mid_buf, true);
+   ArraySetAsSeries(upper_buf, true);
+   ArraySetAsSeries(lower_buf, true);
+   if(CopyBuffer(g_bb_handle[idx], 0, 0, 3, mid_buf) < 3) return;
+   if(CopyBuffer(g_bb_handle[idx], 1, 0, 3, upper_buf) < 3) return;
+   if(CopyBuffer(g_bb_handle[idx], 2, 0, 3, lower_buf) < 3) return;
+
+   MqlRates rates[];
+   ArraySetAsSeries(rates, true);
+   if(CopyRates(_Symbol, tf, 0, 2, rates) < 2) return;
+
+   MqlTick tick;
+   if(!SymbolInfoTick(_Symbol, tick)) return;
+
+   double bw = upper_buf[0] - lower_buf[0];
+   double pct_running = (bw > 0) ? (tick.bid - lower_buf[0]) / bw * 100.0 : 50.0;
+
+   // Closed bar analysis
+   double cls_bw = upper_buf[1] - lower_buf[1];
+   double pct_closed = (cls_bw > 0) ? (rates[1].close - lower_buf[1]) / cls_bw * 100.0 : 50.0;
+
+   bool running_above_upper = (tick.bid > upper_buf[0]);
+   bool running_below_lower = (tick.bid < lower_buf[0]);
+   bool closed_above_upper  = (rates[1].close > upper_buf[1]);
+   bool closed_below_lower  = (rates[1].close < lower_buf[1]);
+
+   // Previous bar was outside, current bar came back inside
+   bool closed_reenter_from_below = (rates[1].close > lower_buf[1]) && (rates[1].open < lower_buf[1]);
+   bool closed_reenter_from_above = (rates[1].close < upper_buf[1]) && (rates[1].open > upper_buf[1]);
+
+   string filename = _Symbol + "_bb_" + TFToString(tf_min) + ".csv";
+   int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+   if(handle == INVALID_HANDLE) return;
+
+   WriteStdHeader(handle, "bb", tf_min);
+   WriteBarFields(handle, "running", rates[0].open, rates[0].high, rates[0].low, rates[0].close, rates[0].time, rates[0].tick_volume);
+   WriteBarFields(handle, "closed",  rates[1].open, rates[1].high, rates[1].low, rates[1].close, rates[1].time, rates[1].tick_volume);
+
+   FileWrite(handle, "upper_band",              DoubleToString(upper_buf[0], _Digits));
+   FileWrite(handle, "middle_band",             DoubleToString(mid_buf[0], _Digits));
+   FileWrite(handle, "lower_band",              DoubleToString(lower_buf[0], _Digits));
+   FileWrite(handle, "band_width",              DoubleToString(bw, _Digits));
+
+   FileWrite(handle, "running_pct_in_band",     DoubleToString(pct_running, 1));
+   FileWrite(handle, "running_above_upper",     running_above_upper ? "TRUE" : "FALSE");
+   FileWrite(handle, "running_below_lower",     running_below_lower ? "TRUE" : "FALSE");
+
+   FileWrite(handle, "closed_pct_in_band",      DoubleToString(pct_closed, 1));
+   FileWrite(handle, "closed_above_upper",      closed_above_upper ? "TRUE" : "FALSE");
+   FileWrite(handle, "closed_below_lower",      closed_below_lower ? "TRUE" : "FALSE");
+   FileWrite(handle, "closed_reenter_from_below", closed_reenter_from_below ? "TRUE" : "FALSE");
+   FileWrite(handle, "closed_reenter_from_above", closed_reenter_from_above ? "TRUE" : "FALSE");
+
+   FileWrite(handle, "cfg_period",              IntegerToString(g_bb_period[idx]));
+   FileWrite(handle, "cfg_deviation",           DoubleToString(g_bb_deviation[idx], 1));
+   FileClose(handle);
+}
+
+//=====================================================================
+//  ADX — compute + write
+//=====================================================================
+void WriteADXSignal(int idx)
+{
+   int tf_min = g_adx_tf[idx];
+   ENUM_TIMEFRAMES tf = MinToTF(tf_min);
+
+   // Buffer 0 = ADX main, 1 = +DI, 2 = -DI
+   double adx_buf[], pdi_buf[], mdi_buf[];
+   ArraySetAsSeries(adx_buf, true);
+   ArraySetAsSeries(pdi_buf, true);
+   ArraySetAsSeries(mdi_buf, true);
+   if(CopyBuffer(g_adx_handle[idx], 0, 0, 4, adx_buf) < 4) return;
+   if(CopyBuffer(g_adx_handle[idx], 1, 0, 4, pdi_buf) < 4) return;
+   if(CopyBuffer(g_adx_handle[idx], 2, 0, 4, mdi_buf) < 4) return;
+
+   MqlRates rates[];
+   ArraySetAsSeries(rates, true);
+   if(CopyRates(_Symbol, tf, 0, 2, rates) < 2) return;
+
+   string trend_strength;
+   if(adx_buf[1] < 18)      trend_strength = "RANGING";
+   else if(adx_buf[1] < 25) trend_strength = "WEAK_TREND";
+   else if(adx_buf[1] < 40) trend_strength = "TRENDING";
+   else                      trend_strength = "STRONG_TREND";
+
+   bool adx_rising = (adx_buf[1] > adx_buf[2]) && (adx_buf[2] > adx_buf[3]);
+   string di_bias = (pdi_buf[1] > mdi_buf[1]) ? "BULLISH" : "BEARISH";
+
+   string filename = _Symbol + "_adx_" + TFToString(tf_min) + ".csv";
+   int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+   if(handle == INVALID_HANDLE) return;
+
+   WriteStdHeader(handle, "adx", tf_min);
+   WriteBarFields(handle, "running", rates[0].open, rates[0].high, rates[0].low, rates[0].close, rates[0].time, rates[0].tick_volume);
+   WriteBarFields(handle, "closed",  rates[1].open, rates[1].high, rates[1].low, rates[1].close, rates[1].time, rates[1].tick_volume);
+
+   FileWrite(handle, "running_adx",            DoubleToString(adx_buf[0], 2));
+   FileWrite(handle, "running_plus_di",        DoubleToString(pdi_buf[0], 2));
+   FileWrite(handle, "running_minus_di",       DoubleToString(mdi_buf[0], 2));
+
+   FileWrite(handle, "closed_adx",             DoubleToString(adx_buf[1], 2));
+   FileWrite(handle, "closed_plus_di",         DoubleToString(pdi_buf[1], 2));
+   FileWrite(handle, "closed_minus_di",        DoubleToString(mdi_buf[1], 2));
+   FileWrite(handle, "closed_trend_strength",  trend_strength);
+   FileWrite(handle, "closed_adx_rising",      adx_rising ? "TRUE" : "FALSE");
+   FileWrite(handle, "closed_di_bias",         di_bias);
+
+   FileWrite(handle, "cfg_period",             IntegerToString(g_adx_period[idx]));
+   FileClose(handle);
+}
+
+//=====================================================================
+//  MACD — compute + write
+//=====================================================================
+void WriteMACDSignal(int idx)
+{
+   int tf_min = g_macd_tf[idx];
+   ENUM_TIMEFRAMES tf = MinToTF(tf_min);
+
+   // Buffer 0 = MACD main, 1 = signal line
+   double macd_buf[], sig_buf[];
+   ArraySetAsSeries(macd_buf, true);
+   ArraySetAsSeries(sig_buf, true);
+   if(CopyBuffer(g_macd_handle[idx], 0, 0, 4, macd_buf) < 4) return;
+   if(CopyBuffer(g_macd_handle[idx], 1, 0, 4, sig_buf) < 4) return;
+
+   MqlRates rates[];
+   ArraySetAsSeries(rates, true);
+   if(CopyRates(_Symbol, tf, 0, 2, rates) < 2) return;
+
+   double running_hist = macd_buf[0] - sig_buf[0];
+   double closed_hist  = macd_buf[1] - sig_buf[1];
+   double prev_hist    = macd_buf[2] - sig_buf[2];
+
+   // Histogram flip detection on closed bar
+   string hist_cross = "NONE";
+   if(prev_hist <= 0 && closed_hist > 0) hist_cross = "BULLISH_FLIP";
+   if(prev_hist >= 0 && closed_hist < 0) hist_cross = "BEARISH_FLIP";
+
+   // Zero line cross
+   string zero_cross = "NONE";
+   if(macd_buf[2] <= 0 && macd_buf[1] > 0) zero_cross = "CROSS_ABOVE";
+   if(macd_buf[2] >= 0 && macd_buf[1] < 0) zero_cross = "CROSS_BELOW";
+
+   string filename = _Symbol + "_macd_" + TFToString(tf_min) + ".csv";
+   int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+   if(handle == INVALID_HANDLE) return;
+
+   WriteStdHeader(handle, "macd", tf_min);
+   WriteBarFields(handle, "running", rates[0].open, rates[0].high, rates[0].low, rates[0].close, rates[0].time, rates[0].tick_volume);
+   WriteBarFields(handle, "closed",  rates[1].open, rates[1].high, rates[1].low, rates[1].close, rates[1].time, rates[1].tick_volume);
+
+   FileWrite(handle, "running_macd",           DoubleToString(macd_buf[0], _Digits));
+   FileWrite(handle, "running_signal",         DoubleToString(sig_buf[0], _Digits));
+   FileWrite(handle, "running_histogram",      DoubleToString(running_hist, _Digits));
+
+   FileWrite(handle, "closed_macd",            DoubleToString(macd_buf[1], _Digits));
+   FileWrite(handle, "closed_signal",          DoubleToString(sig_buf[1], _Digits));
+   FileWrite(handle, "closed_histogram",       DoubleToString(closed_hist, _Digits));
+   FileWrite(handle, "closed_hist_cross",      hist_cross);
+   FileWrite(handle, "closed_zero_cross",      zero_cross);
+
+   FileWrite(handle, "cfg_fast",               IntegerToString(g_macd_fast[idx]));
+   FileWrite(handle, "cfg_slow",               IntegerToString(g_macd_slow[idx]));
+   FileWrite(handle, "cfg_signal",             IntegerToString(g_macd_signal[idx]));
+   FileClose(handle);
+}
+
+//=====================================================================
+//  STOCHASTIC — compute + write
+//=====================================================================
+void WriteStochSignal(int idx)
+{
+   int tf_min = g_stoch_tf[idx];
+   ENUM_TIMEFRAMES tf = MinToTF(tf_min);
+
+   // Buffer 0 = %K main, 1 = %D signal
+   double k_buf[], d_buf[];
+   ArraySetAsSeries(k_buf, true);
+   ArraySetAsSeries(d_buf, true);
+   if(CopyBuffer(g_stoch_handle[idx], 0, 0, 4, k_buf) < 4) return;
+   if(CopyBuffer(g_stoch_handle[idx], 1, 0, 4, d_buf) < 4) return;
+
+   MqlRates rates[];
+   ArraySetAsSeries(rates, true);
+   if(CopyRates(_Symbol, tf, 0, 2, rates) < 2) return;
+
+   string closed_zone = StochZone(k_buf[1]);
+
+   // Cross detection on closed bars
+   string closed_cross = "NONE";
+   if(k_buf[2] <= d_buf[2] && k_buf[1] > d_buf[1])
+   {
+      if(k_buf[1] < 25) closed_cross = "BULLISH_OS";     // K crosses above D below 25
+      else               closed_cross = "BULLISH";
+   }
+   else if(k_buf[2] >= d_buf[2] && k_buf[1] < d_buf[1])
+   {
+      if(k_buf[1] > 75) closed_cross = "BEARISH_OB";     // K crosses below D above 75
+      else               closed_cross = "BEARISH";
+   }
+
+   string filename = _Symbol + "_stoch_" + TFToString(tf_min) + ".csv";
+   int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+   if(handle == INVALID_HANDLE) return;
+
+   WriteStdHeader(handle, "stoch", tf_min);
+   WriteBarFields(handle, "running", rates[0].open, rates[0].high, rates[0].low, rates[0].close, rates[0].time, rates[0].tick_volume);
+   WriteBarFields(handle, "closed",  rates[1].open, rates[1].high, rates[1].low, rates[1].close, rates[1].time, rates[1].tick_volume);
+
+   FileWrite(handle, "running_k",              DoubleToString(k_buf[0], 2));
+   FileWrite(handle, "running_d",              DoubleToString(d_buf[0], 2));
+
+   FileWrite(handle, "closed_k",               DoubleToString(k_buf[1], 2));
+   FileWrite(handle, "closed_d",               DoubleToString(d_buf[1], 2));
+   FileWrite(handle, "closed_zone",            closed_zone);
+   FileWrite(handle, "closed_cross",           closed_cross);
+
+   FileWrite(handle, "cfg_k_period",           IntegerToString(g_stoch_k[idx]));
+   FileWrite(handle, "cfg_d_period",           IntegerToString(g_stoch_d[idx]));
+   FileWrite(handle, "cfg_slowing",            IntegerToString(g_stoch_slowing[idx]));
+   FileClose(handle);
+}
+
+string StochZone(double k)
+{
+   if(k >= 80) return "OVERBOUGHT";
+   if(k <= 20) return "OVERSOLD";
+   return "NEUTRAL";
+}
+
+//=====================================================================
+//  ATR (standalone) — compute + write
+//=====================================================================
+void WriteATRSignal(int idx)
+{
+   int tf_min = g_atr_tf[idx];
+   ENUM_TIMEFRAMES tf = MinToTF(tf_min);
+
+   double atr_buf[];
+   ArraySetAsSeries(atr_buf, true);
+   if(CopyBuffer(g_atr_handle[idx], 0, 0, 22, atr_buf) < 22) return;
+
+   MqlRates rates[];
+   ArraySetAsSeries(rates, true);
+   if(CopyRates(_Symbol, tf, 0, 2, rates) < 2) return;
+
+   MqlTick tick;
+   if(!SymbolInfoTick(_Symbol, tick)) return;
+
+   // SMA of ATR over 20 bars for expansion/contraction detection
+   double atr_sma = 0;
+   for(int i = 1; i <= 20; i++) atr_sma += atr_buf[i];
+   atr_sma /= 20.0;
+
+   double ratio = (atr_sma > 0) ? atr_buf[0] / atr_sma : 1.0;
+   string vol_state;
+   if(ratio > 1.2)      vol_state = "EXPANDING";
+   else if(ratio > 1.0) vol_state = "ABOVE_AVG";
+   else if(ratio > 0.8) vol_state = "BELOW_AVG";
+   else                  vol_state = "CONTRACTING";
+
+   // ATR as % of price
+   double atr_pct = (tick.bid > 0) ? (atr_buf[0] / tick.bid) * 100.0 : 0;
+
+   string filename = _Symbol + "_atr_" + TFToString(tf_min) + ".csv";
+   int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+   if(handle == INVALID_HANDLE) return;
+
+   WriteStdHeader(handle, "atr", tf_min);
+   WriteBarFields(handle, "running", rates[0].open, rates[0].high, rates[0].low, rates[0].close, rates[0].time, rates[0].tick_volume);
+   WriteBarFields(handle, "closed",  rates[1].open, rates[1].high, rates[1].low, rates[1].close, rates[1].time, rates[1].tick_volume);
+
+   FileWrite(handle, "running_atr",            DoubleToString(atr_buf[0], _Digits));
+   FileWrite(handle, "running_atr_pct",        DoubleToString(atr_pct, 4));
+   FileWrite(handle, "closed_atr",             DoubleToString(atr_buf[1], _Digits));
+   FileWrite(handle, "atr_sma20",              DoubleToString(atr_sma, _Digits));
+   FileWrite(handle, "atr_vs_sma_ratio",       DoubleToString(ratio, 2));
+   FileWrite(handle, "volatility_state",       vol_state);
+
+   FileWrite(handle, "cfg_period",             IntegerToString(g_atr_period[idx]));
    FileClose(handle);
 }
 //+------------------------------------------------------------------+
