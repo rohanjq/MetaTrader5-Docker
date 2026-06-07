@@ -125,13 +125,15 @@ for pkg in "numpy<2" "MetaTrader5" "rpyc==5.3.1" "python-dateutil"; do
     fi
 done
 
-for pkg in "mt5linux" "rpyc==5.3.1" "pyxdg"; do
+for pkg in "mt5linux" "pyxdg"; do
     check_name="${pkg%%[<=]*}"
     if ! linux_pkg_installed "$check_name"; then
         log "  Installing $pkg on Linux..."
         pip install --break-system-packages --no-cache-dir "$pkg"
     fi
 done
+# Force rpyc 5.3.1 after mt5linux (which pulls 5.2.3) to match Wine side
+pip install --break-system-packages --no-cache-dir "rpyc==5.3.1" 2>/dev/null || true
 
 log "[4/7] Python packages ready."
 
