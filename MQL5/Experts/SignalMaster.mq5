@@ -1177,9 +1177,9 @@ void WriteRSISignal(int idx)
    string closed_cross = "NONE";
    if(rsi_buf[2] < 30 && rsi_buf[1] >= 30)       closed_cross = "CROSS_UP_30";
    else if(rsi_buf[2] > 70 && rsi_buf[1] <= 70)   closed_cross = "CROSS_DOWN_70";
+   else if(rsi_buf[2] < 52 && rsi_buf[1] >= 52)   closed_cross = "CROSS_UP_52";
    else if(rsi_buf[2] < 50 && rsi_buf[1] >= 50)   closed_cross = "CROSS_UP_50";
    else if(rsi_buf[2] > 50 && rsi_buf[1] <= 50)   closed_cross = "CROSS_DOWN_50";
-   else if(rsi_buf[2] < 52 && rsi_buf[1] >= 52)   closed_cross = "CROSS_UP_52";
 
    string filename = _Symbol + "_rsi" + IntegerToString(period) + "_" + TFToString(tf_min) + ".csv";
    int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
