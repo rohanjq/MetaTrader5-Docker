@@ -7,6 +7,9 @@ WINEDEBUG='-all'
 wine_executable="wine"
 mt5server_port="8001"
 MT5_CMD_OPTIONS="${MT5_CMD_OPTIONS:-}"
+MT5_LOGIN="${MT5_LOGIN:-}"
+MT5_PASSWORD="${MT5_PASSWORD:-}"
+MT5_SERVER="${MT5_SERVER:-}"
 mono_url="https://dl.winehq.org/wine/wine-mono/10.3.0/wine-mono-10.3.0-x86.msi"
 python_url="https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe"
 mt5setup_url="https://download.terminal.free/cdn/web/pxbt.trading.ltd/mt5/pxbttrading5setup.exe"
@@ -117,8 +120,12 @@ fi
 # Now launch the terminal (after Python packages are installed)
 if [ -e "$mt5file" ]; then
     show_message "[6/7] Launching MT5 terminal..."
-    $wine_executable "$mt5file" /portable $MT5_CMD_OPTIONS &
-    sleep 10
+    mt5_args="/portable"
+    [ -n "$MT5_LOGIN" ] && mt5_args="$mt5_args /login:$MT5_LOGIN"
+    [ -n "$MT5_PASSWORD" ] && mt5_args="$mt5_args /password:$MT5_PASSWORD"
+    [ -n "$MT5_SERVER" ] && mt5_args="$mt5_args /server:$MT5_SERVER"
+    $wine_executable "$mt5file" $mt5_args $MT5_CMD_OPTIONS &
+    sleep 15
     show_message "[6/7] MT5 terminal launched."
 fi
 
