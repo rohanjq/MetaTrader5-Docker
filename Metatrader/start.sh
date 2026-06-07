@@ -118,6 +118,7 @@ if [ -d "$mt5config_dir" ]; then
     grep -q "ExpertEnabled" "$mt5config_dir/common.ini" || echo "ExpertEnabled=1" >> "$mt5config_dir/common.ini"
     grep -q "ExpertDllImport" "$mt5config_dir/common.ini" || echo "ExpertDllImport=1" >> "$mt5config_dir/common.ini"
     grep -q "ExpertAllowLive" "$mt5config_dir/common.ini" || echo "ExpertAllowLive=1" >> "$mt5config_dir/common.ini"
+    grep -q "AutoTrading" "$mt5config_dir/common.ini" || echo "AutoTrading=1" >> "$mt5config_dir/common.ini"
 
     # Write account config if credentials are provided
     if [ -n "$MT5_LOGIN" ] && [ -n "$MT5_PASSWORD" ] && [ -n "$MT5_SERVER" ]; then
