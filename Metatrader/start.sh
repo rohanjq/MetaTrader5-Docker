@@ -128,8 +128,13 @@ if [ -d "$mt5config_dir" ]; then
 Login=$MT5_LOGIN
 Password=$MT5_PASSWORD
 Server=$MT5_SERVER
-EnableAutoTrading=1
-EnableDDE=0
+
+[Experts]
+AllowLiveTrading=1
+AllowDllImport=1
+Enabled=1
+Account=0
+Profile=0
 EOINI
     fi
 fi
