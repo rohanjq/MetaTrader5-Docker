@@ -109,8 +109,11 @@ fi
 
 # Configure MT5 for API access
 mt5config_dir=$(dirname "$mt5file")/Config
+mt5_win_config_dir='C:\Program Files\PXBT Trading MT5 Terminal\Config'
 if [ -d "$mt5config_dir" ]; then
     show_message "[6/7] Configuring MT5 for API access..."
+    # Create common.ini if it doesn't exist
+    touch "$mt5config_dir/common.ini"
     # Ensure common.ini has required settings
     grep -q "ExpertEnabled" "$mt5config_dir/common.ini" || echo "ExpertEnabled=1" >> "$mt5config_dir/common.ini"
     grep -q "ExpertDllImport" "$mt5config_dir/common.ini" || echo "ExpertDllImport=1" >> "$mt5config_dir/common.ini"
@@ -133,7 +136,7 @@ if [ -e "$mt5file" ]; then
     show_message "[6/7] Launching MT5 terminal..."
     mt5_args="/portable"
     if [ -f "$mt5config_dir/auto_login.ini" ]; then
-        mt5_args="$mt5_args /config:$mt5config_dir/auto_login.ini"
+        mt5_args="$mt5_args /config:${mt5_win_config_dir}\\auto_login.ini"
     fi
     $wine_executable "$mt5file" $mt5_args $MT5_CMD_OPTIONS &
     sleep 20
