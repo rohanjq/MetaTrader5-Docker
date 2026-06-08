@@ -12,13 +12,13 @@
 
 //=== Input Parameters ================================================
 //  Format: "TF_minutes:param1:param2, ..." — leave empty to disable
-input string INP_UTBot       = "1:10:2.0, 3:10:2.0, 10:10:2.0, 15:10:2.0, 45:10:2.0"; // UT Bot → TF:ATR_Period:ATR_Mult
+input string INP_UTBot       = "1:10:2.0, 3:10:2.0, 5:10:2.0, 10:10:2.0, 15:10:2.0, 45:10:2.0"; // UT Bot → TF:ATR_Period:ATR_Mult
 input string INP_DC          = "1:20:0, 3:20:0, 5:20:0, 15:20:0, 45:20:0";             // DC Chan → TF:Length:Offset
 input string INP_LiqGrab     = "3:50:5:2.0:5:100, 5:50:5:2.0:5:100, 15:50:5:2.0:5:100, 60:50:5:2.0:5:200, 240:50:5:2.0:5:200"; // LiqGrab → TF:LookbackRange:BarsN:WickBodyRatio:CandlesBeforeBreakout:MAPeriod
-input string INP_EMA         = "1:9, 1:21, 1:50, 1:200, 3:20, 5:50, 5:200, 15:50, 15:200"; // EMA → TF:Period
-input string INP_RSI         = "1:14, 1:2, 3:14, 5:14";                                    // RSI → TF:Period
+input string INP_EMA         = "1:9, 1:21, 1:50, 1:200, 3:20, 5:21, 5:50, 5:200, 15:50, 15:200"; // EMA → TF:Period
+input string INP_RSI         = "1:14, 1:2, 3:14, 5:14, 15:14";                               // RSI → TF:Period
 input string INP_BB          = "1:20:2.0, 3:20:2.0, 5:20:2.0";                             // Bollinger → TF:Period:Deviation
-input string INP_ADX         = "5:14, 15:14";                                               // ADX → TF:Period
+input string INP_ADX         = "1:14, 5:14, 15:14";                                          // ADX → TF:Period
 input string INP_MACD        = "1:12:26:9, 3:12:26:9";                                      // MACD → TF:Fast:Slow:Signal
 input string INP_STOCH       = "3:5:3:3";                                                    // Stochastic → TF:K:D:Slowing
 input string INP_ATR         = "1:14, 3:14, 5:14";                                          // ATR → TF:Period
