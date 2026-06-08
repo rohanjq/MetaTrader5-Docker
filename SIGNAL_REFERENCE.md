@@ -125,7 +125,7 @@ Config per instance: `TF` (e.g. `1` = M1 output timeframe; VWAP always computed 
 ```
 key                 → description
 symbol              → BTCUSDT
-indicator           → utbot | dc | liqgrab
+indicator           → utbot | dc | liqgrab | ema | rsi | bb | adx | macd | stoch | atr | vwap
 timeframe           → M1, M3, M5, M10, M15, M45, H1, H4
 timeframe_minutes   → 1, 3, 5, 10, 15, 45, 60, 240
 server_time         → 2026.06.07 07:30:30
