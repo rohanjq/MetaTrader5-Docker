@@ -22,6 +22,7 @@ input string INP_ADX         = "5:14, 15:14";                                   
 input string INP_MACD        = "1:12:26:9, 3:12:26:9";                                      // MACD → TF:Fast:Slow:Signal
 input string INP_STOCH       = "3:5:3:3";                                                    // Stochastic → TF:K:D:Slowing
 input string INP_ATR         = "1:14, 3:14, 5:14";                                          // ATR → TF:Period
+input string INP_VWAP        = "1, 5, 15";                                                      // VWAP → TF (session VWAP resets daily at 00:00 server)
 input int    WriteInterval   = 5;   // File write interval (seconds)
 
 //=== UT Bot state ====================================================
@@ -94,6 +95,10 @@ int    g_atr_tf[MAX_INST];
 int    g_atr_period[MAX_INST];
 int    g_atr_handle[MAX_INST];
 
+//=== VWAP state ======================================================
+int    g_vwap_count = 0;
+int    g_vwap_tf[MAX_INST];
+
 //+------------------------------------------------------------------+
 //| Initialization                                                     |
 //+------------------------------------------------------------------+
@@ -109,6 +114,7 @@ int OnInit()
    ParseMACDConfig(INP_MACD);
    ParseStochConfig(INP_STOCH);
    ParseATRConfig(INP_ATR);
+   ParseVWAPConfig(INP_VWAP);
 
    for(int i = 0; i < g_utbot_count; i++)
    {
@@ -152,7 +158,7 @@ int OnInit()
          " | UTBot[", g_utbot_count, "] DC[", g_dc_count, "] LiqGrab[", g_liq_count,
          "] EMA[", g_ema_count, "] RSI[", g_rsi_count, "] BB[", g_bb_count,
          "] ADX[", g_adx_count, "] MACD[", g_macd_count, "] Stoch[", g_stoch_count,
-         "] ATR[", g_atr_count, "]");
+         "] ATR[", g_atr_count, "] VWAP[", g_vwap_count, "]");
 
    return INIT_SUCCEEDED;
 }
@@ -210,6 +216,8 @@ void WriteAllSignals()
       WriteStochSignal(i);
    for(int i = 0; i < g_atr_count; i++)
       WriteATRSignal(i);
+   for(int i = 0; i < g_vwap_count; i++)
+      WriteVWAPSignal(i);
 }
 
 //=====================================================================
@@ -389,6 +397,19 @@ void ParseATRConfig(string config)
       StringSplit(items[i], ':', parts);
       g_atr_tf[i]     = (int)StringToInteger(parts[0]);
       g_atr_period[i] = (ArraySize(parts) > 1) ? (int)StringToInteger(parts[1]) : 14;
+   }
+}
+
+void ParseVWAPConfig(string config)
+{
+   if(StringLen(config) == 0) return;
+   string items[];
+   int count = StringSplit(config, ',', items);
+   g_vwap_count = MathMin(count, MAX_INST);
+   for(int i = 0; i < g_vwap_count; i++)
+   {
+      StringTrimLeft(items[i]); StringTrimRight(items[i]);
+      g_vwap_tf[i] = (int)StringToInteger(items[i]);
    }
 }
 
@@ -699,6 +720,7 @@ void WriteDCSignal(int idx)
    int offset = g_dc_offset[idx];
 
    double upper = 0, lower = 0, mid = 0;
+   double dc_width_sma20 = 0;
    double run_open = 0, run_high = 0, run_low = 0, run_close = 0;
    double cls_open = 0, cls_high = 0, cls_low = 0, cls_close = 0;
    datetime run_time = 0, cls_time = 0;
@@ -707,18 +729,40 @@ void WriteDCSignal(int idx)
    if(IsNativeTF(tf_min))
    {
       ENUM_TIMEFRAMES tf = MinToTF(tf_min);
-      int bars_needed = length + offset + 2;
+      int bars_needed = length + offset + 22;  // +22 for width SMA computation
 
       double highs[], lows[];
       ArraySetAsSeries(highs, true);
       ArraySetAsSeries(lows, true);
 
-      if(CopyHigh(_Symbol, tf, offset + 1, length, highs) < length) return;
-      if(CopyLow(_Symbol, tf, offset + 1, length, lows) < length) return;
+      if(CopyHigh(_Symbol, tf, 0, bars_needed, highs) < bars_needed) return;
+      if(CopyLow(_Symbol, tf, 0, bars_needed, lows) < bars_needed) return;
 
-      upper = highs[ArrayMaximum(highs)];
-      lower = lows[ArrayMinimum(lows)];
+      // Current DC from bars [offset+1 .. offset+length] (series order, 0=newest)
+      double dc_hi = -DBL_MAX, dc_lo = DBL_MAX;
+      for(int i = offset + 1; i <= offset + length; i++)
+      {
+         if(highs[i] > dc_hi) dc_hi = highs[i];
+         if(lows[i] < dc_lo)  dc_lo = lows[i];
+      }
+      upper = dc_hi;
+      lower = dc_lo;
       mid   = (upper + lower) / 2.0;
+
+      // Compute DC width at each of last 20 shifted bars for SMA
+      // Bar k's DC window: [offset+1+k .. offset+length+k]
+      double width_sum = 0;
+      for(int k = 1; k <= 20; k++)
+      {
+         double hi_k = -DBL_MAX, lo_k = DBL_MAX;
+         for(int j = offset + 1 + k; j <= offset + length + k && j < bars_needed; j++)
+         {
+            if(highs[j] > hi_k) hi_k = highs[j];
+            if(lows[j] < lo_k)  lo_k = lows[j];
+         }
+         width_sum += (hi_k - lo_k);
+      }
+      dc_width_sma20 = width_sum / 20.0;
 
       // Get running + closed bars
       MqlRates rates[];
@@ -737,9 +781,9 @@ void WriteDCSignal(int idx)
       double opens[], hi[], lo[], cl[];
       long vols[];
       datetime times[];
-      int total = BuildSyntheticBars(tf_min, length + offset + 5,
+      int total = BuildSyntheticBars(tf_min, length + offset + 25,
                                      opens, hi, lo, cl, vols, times);
-      if(total < length + offset + 2) return;
+      if(total < length + offset + 22) return;
 
       // DC from closed synthetic bars (skip last = running)
       upper = -DBL_MAX;
@@ -751,6 +795,21 @@ void WriteDCSignal(int idx)
          if(lo[i] < lower) lower = lo[i];
       }
       mid = (upper + lower) / 2.0;
+
+      // Compute DC width SMA over 20 shifted bars
+      double width_sum = 0;
+      for(int k = 1; k <= 20; k++)
+      {
+         double hi_k = -DBL_MAX, lo_k = DBL_MAX;
+         int si = start_idx - k;
+         for(int j = si; j > si - length && j >= 0; j--)
+         {
+            if(hi[j] > hi_k) hi_k = hi[j];
+            if(lo[j] < lo_k) lo_k = lo[j];
+         }
+         width_sum += (hi_k - lo_k);
+      }
+      dc_width_sma20 = width_sum / 20.0;
 
       int run_i = total - 1;
       int cls_i = total - 2;
@@ -830,6 +889,13 @@ void WriteDCSignal(int idx)
    FileWrite(handle, "closed_break_lower",      cls_break_lower ? "TRUE" : "FALSE");
    FileWrite(handle, "closed_upper_wick_rej",   upper_wick_rej ? "TRUE" : "FALSE");
    FileWrite(handle, "closed_lower_wick_rej",   lower_wick_rej ? "TRUE" : "FALSE");
+
+   // Compression detection: current width vs 20-bar SMA of width
+   double width_ratio = (dc_width_sma20 > 0) ? channel_width / dc_width_sma20 : 1.0;
+   bool dc_compressed = (width_ratio < 0.75);
+   FileWrite(handle, "channel_width_sma20",     DoubleToString(dc_width_sma20, _Digits));
+   FileWrite(handle, "width_vs_sma_ratio",      DoubleToString(width_ratio, 2));
+   FileWrite(handle, "dc_compressed",           dc_compressed ? "TRUE" : "FALSE");
 
    // Config echo
    FileWrite(handle, "cfg_length",              IntegerToString(length));
@@ -1224,9 +1290,9 @@ void WriteBBSignal(int idx)
    ArraySetAsSeries(mid_buf, true);
    ArraySetAsSeries(upper_buf, true);
    ArraySetAsSeries(lower_buf, true);
-   if(CopyBuffer(g_bb_handle[idx], 0, 0, 3, mid_buf) < 3) return;
-   if(CopyBuffer(g_bb_handle[idx], 1, 0, 3, upper_buf) < 3) return;
-   if(CopyBuffer(g_bb_handle[idx], 2, 0, 3, lower_buf) < 3) return;
+   if(CopyBuffer(g_bb_handle[idx], 0, 0, 22, mid_buf) < 22) return;
+   if(CopyBuffer(g_bb_handle[idx], 1, 0, 22, upper_buf) < 22) return;
+   if(CopyBuffer(g_bb_handle[idx], 2, 0, 22, lower_buf) < 22) return;
 
    MqlRates rates[];
    ArraySetAsSeries(rates, true);
@@ -1273,6 +1339,25 @@ void WriteBBSignal(int idx)
    FileWrite(handle, "closed_below_lower",      closed_below_lower ? "TRUE" : "FALSE");
    FileWrite(handle, "closed_reenter_from_below", closed_reenter_from_below ? "TRUE" : "FALSE");
    FileWrite(handle, "closed_reenter_from_above", closed_reenter_from_above ? "TRUE" : "FALSE");
+
+   // Bandwidth = (upper - lower) / middle × 100 (normalized %)
+   // Compute SMA of bandwidth over last 20 closed bars for squeeze detection
+   double bandwidth = (mid_buf[0] > 0) ? (bw / mid_buf[0]) * 100.0 : 0;
+   double bw_sma = 0;
+   for(int i = 1; i <= 20; i++)
+   {
+      double bw_i = upper_buf[i] - lower_buf[i];
+      double mid_i = mid_buf[i];
+      if(mid_i > 0) bw_sma += (bw_i / mid_i) * 100.0;
+   }
+   bw_sma /= 20.0;
+   double bw_ratio = (bw_sma > 0) ? bandwidth / bw_sma : 1.0;
+   bool bb_squeeze = (bw_ratio < 0.85);
+
+   FileWrite(handle, "bb_bandwidth",            DoubleToString(bandwidth, 4));
+   FileWrite(handle, "bb_bandwidth_sma20",      DoubleToString(bw_sma, 4));
+   FileWrite(handle, "bb_bandwidth_ratio",      DoubleToString(bw_ratio, 2));
+   FileWrite(handle, "bb_squeeze",              bb_squeeze ? "TRUE" : "FALSE");
 
    FileWrite(handle, "cfg_period",              IntegerToString(g_bb_period[idx]));
    FileWrite(handle, "cfg_deviation",           DoubleToString(g_bb_deviation[idx], 1));
@@ -1502,6 +1587,107 @@ void WriteATRSignal(int idx)
    FileWrite(handle, "volatility_state",       vol_state);
 
    FileWrite(handle, "cfg_period",             IntegerToString(g_atr_period[idx]));
+   FileClose(handle);
+}
+
+//=====================================================================
+//  VWAP (Session) — compute + write
+//=====================================================================
+// Session VWAP resets at 00:00 server time each day.
+// Formula: VWAP = Σ(typical_price × volume) / Σ(volume)
+// typical_price = (High + Low + Close) / 3
+// We compute on M1 bars from session start to current bar, then write
+// at the requested output timeframe.
+void WriteVWAPSignal(int idx)
+{
+   int tf_min = g_vwap_tf[idx];
+   ENUM_TIMEFRAMES tf = MinToTF(tf_min);
+
+   // Determine today's session start (00:00 server time)
+   MqlDateTime dt;
+   TimeCurrent(dt);
+   dt.hour = 0; dt.min = 0; dt.sec = 0;
+   datetime session_start = StructToTime(dt);
+
+   // Count M1 bars from session start to now
+   int bars_since_start = Bars(_Symbol, PERIOD_M1, session_start, TimeCurrent());
+   if(bars_since_start < 2) return;
+
+   // Cap to prevent excessive computation
+   int bars_to_copy = MathMin(bars_since_start, 1500);
+
+   // Copy M1 OHLCV for VWAP computation (non-series: [0]=oldest from session)
+   MqlRates m1_rates[];
+   ArraySetAsSeries(m1_rates, false);
+   int copied = CopyRates(_Symbol, PERIOD_M1, 0, bars_to_copy, m1_rates);
+   if(copied < 2) return;
+
+   // Find the first bar at or after session_start
+   int session_idx = -1;
+   for(int i = 0; i < copied; i++)
+   {
+      if(m1_rates[i].time >= session_start)
+      {
+         session_idx = i;
+         break;
+      }
+   }
+   if(session_idx < 0 || session_idx >= copied - 1) return;
+
+   // Compute cumulative VWAP from session start
+   double cum_tp_vol = 0;
+   double cum_vol = 0;
+   double vwap = 0;
+
+   for(int i = session_idx; i < copied; i++)
+   {
+      double typical = (m1_rates[i].high + m1_rates[i].low + m1_rates[i].close) / 3.0;
+      double vol = (double)m1_rates[i].tick_volume;
+      if(vol <= 0) vol = 1;  // avoid zero volume bars
+      cum_tp_vol += typical * vol;
+      cum_vol    += vol;
+   }
+
+   if(cum_vol <= 0) return;
+   vwap = cum_tp_vol / cum_vol;
+
+   // Get running + closed bars at the requested TF
+   MqlRates rates[];
+   ArraySetAsSeries(rates, true);
+   if(CopyRates(_Symbol, tf, 0, 2, rates) < 2) return;
+
+   MqlTick tick;
+   if(!SymbolInfoTick(_Symbol, tick)) return;
+
+   // Price vs VWAP
+   string price_vs_vwap = (tick.bid > vwap) ? "ABOVE" : "BELOW";
+   double dist = tick.bid - vwap;
+   double dist_pct = (vwap > 0) ? (dist / vwap) * 100.0 : 0;
+
+   // Closed bar vs VWAP
+   string closed_vs_vwap = (rates[1].close > vwap) ? "ABOVE" : "BELOW";
+   double closed_dist = rates[1].close - vwap;
+
+   // Session bar count (how far into session we are)
+   int session_bars = copied - session_idx;
+
+   string filename = _Symbol + "_vwap_" + TFToString(tf_min) + ".csv";
+   int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+   if(handle == INVALID_HANDLE) return;
+
+   WriteStdHeader(handle, "vwap", tf_min);
+   WriteBarFields(handle, "running", rates[0].open, rates[0].high, rates[0].low, rates[0].close, rates[0].time, rates[0].tick_volume);
+   WriteBarFields(handle, "closed",  rates[1].open, rates[1].high, rates[1].low, rates[1].close, rates[1].time, rates[1].tick_volume);
+
+   FileWrite(handle, "vwap",                   DoubleToString(vwap, _Digits));
+   FileWrite(handle, "running_price_vs_vwap",  price_vs_vwap);
+   FileWrite(handle, "running_dist_to_vwap",   DoubleToString(dist, _Digits));
+   FileWrite(handle, "running_dist_pct",       DoubleToString(dist_pct, 4));
+   FileWrite(handle, "closed_price_vs_vwap",   closed_vs_vwap);
+   FileWrite(handle, "closed_dist_to_vwap",    DoubleToString(closed_dist, _Digits));
+   FileWrite(handle, "session_m1_bars",        IntegerToString(session_bars));
+   FileWrite(handle, "cum_volume",             DoubleToString(cum_vol, 0));
+
    FileClose(handle);
 }
 //+------------------------------------------------------------------+

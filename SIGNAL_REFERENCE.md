@@ -110,6 +110,14 @@ BTCUSDT_atr_M5.csv
 ```
 Config per instance: `TF:Period` (e.g. `1:14` = M1 with 14-period ATR)
 
+### Session VWAP (`vwap`)
+```
+BTCUSDT_vwap_M1.csv
+BTCUSDT_vwap_M5.csv
+BTCUSDT_vwap_M15.csv
+```
+Config per instance: `TF` (e.g. `1` = M1 output timeframe; VWAP always computed from M1 bars, resets daily at 00:00 server)
+
 ---
 
 ## Standard Header (every file)
@@ -216,6 +224,10 @@ closed_break_lower       → TRUE/FALSE (confirmed breakout below)
 closed_upper_wick_rej    → TRUE if wick touched upper but body closed below (bearish rejection)
 closed_lower_wick_rej    → TRUE if wick touched lower but body closed above (bullish rejection)
 
+channel_width_sma20      → 20-bar SMA of channel_width (historical average width)
+width_vs_sma_ratio       → channel_width / channel_width_sma20 (<1 = narrower than average)
+dc_compressed            → TRUE if width_vs_sma_ratio < 0.75 (squeeze/compression detected)
+
 cfg_length               → DC lookback length (e.g. 20)
 cfg_offset               → DC offset (e.g. 0)
 ```
@@ -226,6 +238,10 @@ cfg_offset               → DC offset (e.g. 0)
 - MIDDLE: 31-69%
 - LOWER_MID: 11-30%
 - LOWER: <= 10%
+
+**Compression detection:**
+- `dc_compressed=TRUE` → channel width < 75% of its 20-bar average (squeeze forming, expect breakout)
+- `width_vs_sma_ratio` < 0.75 → compressed, > 1.2 → expanded
 
 ---
 
@@ -356,6 +372,11 @@ closed_below_lower       → TRUE if close < lower band
 closed_reenter_from_below → TRUE if bar opened below lower band but closed above it (bullish reversal)
 closed_reenter_from_above → TRUE if bar opened above upper band but closed below it (bearish reversal)
 
+bb_bandwidth             → normalized bandwidth: (upper - lower) / middle × 100
+bb_bandwidth_sma20       → 20-bar SMA of bb_bandwidth
+bb_bandwidth_ratio       → bb_bandwidth / bb_bandwidth_sma20 (<1 = tighter than average)
+bb_squeeze               → TRUE if bb_bandwidth_ratio < 0.85 (Bollinger squeeze detected)
+
 cfg_period               → BB period (e.g. 20)
 cfg_deviation            → BB standard deviation multiplier (e.g. 2.0)
 ```
@@ -363,7 +384,8 @@ cfg_deviation            → BB standard deviation multiplier (e.g. 2.0)
 **Usage patterns:**
 - `closed_below_lower=TRUE` → price closed outside lower band (mean reversion setup)
 - `closed_reenter_from_below=TRUE` → bullish reversal signal (range fade entry)
-- `band_width` shrinking → squeeze forming, breakout likely
+- `bb_squeeze=TRUE` → Bollinger squeeze detected, expect volatility expansion
+- `bb_bandwidth_ratio` < 0.85 → compressed, > 1.2 → expanding
 - `running_pct_in_band` near 50 → price at middle band
 
 ---
@@ -496,6 +518,32 @@ cfg_period               → ATR period (e.g. 14)
 - `volatility_state=EXPANDING` → widen stops, avoid mean reversion
 - `running_atr_pct` → use for position sizing (higher ATR% = smaller position)
 - `running_atr` → use for stop-loss distance (e.g. 1.5 × ATR)
+
+---
+
+## VWAP Fields (session)
+
+Computes Volume-Weighted Average Price from session start (00:00 server time).
+VWAP = Σ(typical_price × volume) / Σ(volume), where typical_price = (H+L+C)/3.
+Always computed from M1 bars regardless of output timeframe. Resets daily.
+
+```
+vwap                     → current session VWAP value
+running_price_vs_vwap    → ABOVE or BELOW (bid vs VWAP)
+running_dist_to_vwap     → bid - VWAP (positive = above, negative = below)
+running_dist_pct         → distance as % of VWAP value
+closed_price_vs_vwap     → ABOVE or BELOW (last closed bar close vs VWAP)
+closed_dist_to_vwap      → close - VWAP
+session_m1_bars          → number of M1 bars since session start (session maturity)
+cum_volume               → cumulative tick volume since session start
+```
+
+**Usage patterns:**
+- `closed_price_vs_vwap=ABOVE` → price above fair value (bullish intraday bias)
+- `running_dist_pct` close to 0 → price at VWAP (mean level, pullback zone)
+- `running_dist_pct` > 0.1 → significantly above VWAP (extended, mean reversion risk)
+- `session_m1_bars` < 30 → early session, VWAP not yet mature (less reliable)
+- Combine with trend filters: only buy when above VWAP, only sell when below
 
 ---
 
