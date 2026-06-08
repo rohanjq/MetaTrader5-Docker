@@ -7,22 +7,22 @@
 #property version   "2.00"
 #property strict
 
-#define MAX_INST    20
+#define MAX_INST    50
 #define LOOKBACK    500
 
 //=== Input Parameters ================================================
 //  Format: "TF_minutes:param1:param2, ..." — leave empty to disable
-input string INP_UTBot       = "1:10:2.0, 3:10:2.0, 5:10:2.0, 10:10:2.0, 15:10:2.0, 45:10:2.0"; // UT Bot → TF:ATR_Period:ATR_Mult
-input string INP_DC          = "1:20:0, 3:20:0, 5:20:0, 15:20:0, 45:20:0";             // DC Chan → TF:Length:Offset
+input string INP_UTBot       = "1:10:2.0, 2:10:2.0, 3:10:2.0, 5:10:2.0, 10:10:2.0, 15:10:2.0, 30:10:2.0, 45:10:2.0, 60:10:2.0, 240:10:2.0"; // UT Bot → TF:ATR_Period:ATR_Mult
+input string INP_DC          = "1:20:0, 2:20:0, 3:20:0, 5:20:0, 10:20:0, 15:20:0, 30:20:0, 45:20:0, 60:20:0, 240:20:0";             // DC Chan → TF:Length:Offset
 input string INP_LiqGrab     = "3:50:5:2.0:5:100, 5:50:5:2.0:5:100, 15:50:5:2.0:5:100, 60:50:5:2.0:5:200, 240:50:5:2.0:5:200"; // LiqGrab → TF:LookbackRange:BarsN:WickBodyRatio:CandlesBeforeBreakout:MAPeriod
-input string INP_EMA         = "1:9, 1:21, 1:50, 1:200, 3:20, 5:21, 5:50, 5:200, 15:50, 15:200"; // EMA → TF:Period
-input string INP_RSI         = "1:14, 1:2, 3:14, 5:14, 15:14";                               // RSI → TF:Period
-input string INP_BB          = "1:20:2.0, 3:20:2.0, 5:20:2.0";                             // Bollinger → TF:Period:Deviation
-input string INP_ADX         = "1:14, 5:14, 15:14";                                          // ADX → TF:Period
-input string INP_MACD        = "1:12:26:9, 3:12:26:9";                                      // MACD → TF:Fast:Slow:Signal
-input string INP_STOCH       = "3:5:3:3";                                                    // Stochastic → TF:K:D:Slowing
-input string INP_ATR         = "1:14, 3:14, 5:14";                                          // ATR → TF:Period
-input string INP_VWAP        = "1, 5, 15";                                                      // VWAP → TF (session VWAP resets daily at 00:00 server)
+input string INP_EMA         = "1:9, 1:21, 1:50, 1:200, 2:9, 2:21, 2:50, 2:200, 3:9, 3:21, 3:50, 3:200, 5:9, 5:21, 5:50, 5:200, 10:9, 10:21, 10:50, 10:200, 15:9, 15:21, 15:50, 15:200, 30:9, 30:21, 30:50, 30:200, 60:9, 60:21, 60:50, 60:200, 240:9, 240:21, 240:50, 240:200"; // EMA → TF:Period
+input string INP_RSI         = "1:14, 1:2, 2:14, 2:2, 3:14, 3:2, 5:14, 5:2, 10:14, 10:2, 15:14, 15:2, 30:14, 30:2, 60:14, 60:2, 240:14, 240:2";  // RSI → TF:Period
+input string INP_BB          = "1:20:2.0, 2:20:2.0, 3:20:2.0, 5:20:2.0, 10:20:2.0, 15:20:2.0, 30:20:2.0, 60:20:2.0, 240:20:2.0"; // Bollinger → TF:Period:Deviation
+input string INP_ADX         = "1:14, 2:14, 3:14, 5:14, 10:14, 15:14, 30:14, 60:14, 240:14";  // ADX → TF:Period
+input string INP_MACD        = "1:12:26:9, 2:12:26:9, 3:12:26:9, 5:12:26:9, 10:12:26:9, 15:12:26:9, 30:12:26:9, 60:12:26:9, 240:12:26:9"; // MACD → TF:Fast:Slow:Signal
+input string INP_STOCH       = "1:5:3:3, 2:5:3:3, 3:5:3:3, 5:5:3:3, 10:5:3:3, 15:5:3:3, 30:5:3:3, 60:5:3:3, 240:5:3:3"; // Stochastic → TF:K:D:Slowing
+input string INP_ATR         = "1:14, 2:14, 3:14, 5:14, 10:14, 15:14, 30:14, 60:14, 240:14";  // ATR → TF:Period
+input string INP_VWAP        = "1, 2, 3, 5, 10, 15, 30, 60, 240";  // VWAP → TF
 input int    WriteInterval   = 5;   // File write interval (seconds)
 
 //=== UT Bot state ====================================================
