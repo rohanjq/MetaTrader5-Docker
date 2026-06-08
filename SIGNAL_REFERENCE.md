@@ -12,10 +12,13 @@ Files are updated every 5 seconds. Format: key-value CSV with `key,value` header
 ## File Naming Convention
 
 ```
-<SYMBOL>_<indicator>_<timeframe>.csv
+<SYMBOL>_<indicator><params>_<timeframe>.csv
 ```
 
-Examples: `BTCUSDT_utbot_M1.csv`, `BTCUSDT_dc_M15.csv`, `BTCUSDT_liqgrab_H1.csv`
+Indicators with parameters include them in the name (e.g. `bb20d2.0`, `adx14`, `macd12_26_9`).
+Indicators without extra params use bare names (e.g. `utbot`, `dc`, `vwap`).
+
+Examples: `XAUUSD_utbot_M1.csv`, `XAUUSD_bb20d2.0_M1.csv`, `XAUUSD_adx14_M5.csv`, `XAUUSD_macd12_26_9_M3.csv`
 
 ---
 
@@ -74,39 +77,39 @@ BTCUSDT_rsi14_M5.csv
 ```
 Config per instance: `TF:Period` (e.g. `1:14` = M1 with 14-period RSI)
 
-### Bollinger Bands (`bb`)
+### Bollinger Bands (`bb{period}d{dev}`)
 ```
-BTCUSDT_bb_M1.csv
-BTCUSDT_bb_M3.csv
-BTCUSDT_bb_M5.csv
+BTCUSDT_bb20d2.0_M1.csv
+BTCUSDT_bb20d2.0_M3.csv
+BTCUSDT_bb20d2.0_M5.csv
 ```
 Config per instance: `TF:Period:Deviation` (e.g. `1:20:2.0` = M1 with 20-period, 2.0 std dev)
 
-### ADX (`adx`)
+### ADX (`adx{period}`)
 ```
-BTCUSDT_adx_M5.csv
-BTCUSDT_adx_M15.csv
+BTCUSDT_adx14_M5.csv
+BTCUSDT_adx14_M15.csv
 ```
 Config per instance: `TF:Period` (e.g. `5:14` = M5 with 14-period ADX)
 
-### MACD (`macd`)
+### MACD (`macd{fast}_{slow}_{signal}`)
 ```
-BTCUSDT_macd_M1.csv
-BTCUSDT_macd_M3.csv
+BTCUSDT_macd12_26_9_M1.csv
+BTCUSDT_macd12_26_9_M3.csv
 ```
 Config per instance: `TF:Fast:Slow:Signal` (e.g. `1:12:26:9` = M1 standard MACD)
 
-### Stochastic (`stoch`)
+### Stochastic (`stoch{k}_{d}_{slowing}`)
 ```
-BTCUSDT_stoch_M3.csv
+BTCUSDT_stoch5_3_3_M3.csv
 ```
 Config per instance: `TF:K:D:Slowing` (e.g. `3:5:3:3` = M3 with %K=5, %D=3, slowing=3)
 
-### ATR standalone (`atr`)
+### ATR standalone (`atr{period}`)
 ```
-BTCUSDT_atr_M1.csv
-BTCUSDT_atr_M3.csv
-BTCUSDT_atr_M5.csv
+BTCUSDT_atr14_M1.csv
+BTCUSDT_atr14_M3.csv
+BTCUSDT_atr14_M5.csv
 ```
 Config per instance: `TF:Period` (e.g. `1:14` = M1 with 14-period ATR)
 

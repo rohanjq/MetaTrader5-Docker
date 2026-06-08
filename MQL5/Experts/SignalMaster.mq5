@@ -918,11 +918,12 @@ string PriceZone(double pct)
 //  LIQUIDITY GRAB — compute + write
 //=====================================================================
 
-// Find key high: highest high within range that has rejection (local peak)
+// Find key high: highest structural peak within range
 double LiqFindKeyHigh(const double &highs[], const double &lows[],
                       const double &closes[], int total, int barsN, int range)
 {
-   double highestHigh = 0;
+   double bestPeak = 0;
+   bool   found = false;
    int limit = MathMin(range, total - barsN);
    for(int i = barsN; i < limit; i++)
    {
@@ -934,18 +935,21 @@ double LiqFindKeyHigh(const double &highs[], const double &lows[],
          if(j < 0) continue;
          if(j != i && highs[j] > hi) { isPeak = false; break; }
       }
-      if(isPeak && hi > highestHigh)
-         return hi;
-      highestHigh = MathMax(highestHigh, hi);
+      if(isPeak && hi > bestPeak)
+      {
+         bestPeak = hi;
+         found = true;
+      }
    }
-   return 99999;
+   return found ? bestPeak : 99999;
 }
 
-// Find key low: lowest low within range that has rejection (local trough)
+// Find key low: lowest structural trough within range
 double LiqFindKeyLow(const double &highs[], const double &lows[],
                      const double &closes[], int total, int barsN, int range)
 {
-   double lowestLow = DBL_MAX;
+   double bestTrough = DBL_MAX;
+   bool   found = false;
    int limit = MathMin(range, total - barsN);
    for(int i = barsN; i < limit; i++)
    {
@@ -956,11 +960,13 @@ double LiqFindKeyLow(const double &highs[], const double &lows[],
          if(j < 0) continue;
          if(j != i && lows[j] < lo) { isTrough = false; break; }
       }
-      if(isTrough && lo < lowestLow)
-         return lo;
-      lowestLow = MathMin(lowestLow, lo);
+      if(isTrough && lo < bestTrough)
+      {
+         bestTrough = lo;
+         found = true;
+      }
    }
-   return -1;
+   return found ? bestTrough : -1;
 }
 
 // Check if bar at shift is a rejection UP (bullish — lower wick grabs liquidity)
@@ -1082,11 +1088,13 @@ void WriteLiqGrabSignal(int idx)
    //--- Breakout detection: price broke past key level on opposite side (short lookback)
    bool breakoutUp   = false;
    bool breakoutDown = false;
+   double bkKeyHigh = LiqFindKeyHigh(highs, lows, closes, total, barsN, candlesBk + barsN);
+   double bkKeyLow  = LiqFindKeyLow(highs, lows, closes, total, barsN, candlesBk + barsN);
    for(int i = 1; i <= candlesBk && i < total; i++)
    {
-      if(closes[i] > LiqFindKeyHigh(highs, lows, closes, total, barsN, candlesBk + barsN))
+      if(closes[i] > bkKeyHigh)
          breakoutUp = true;
-      if(closes[i] < LiqFindKeyLow(highs, lows, closes, total, barsN, candlesBk + barsN))
+      if(closes[i] < bkKeyLow)
          breakoutDown = true;
    }
 
@@ -1317,7 +1325,7 @@ void WriteBBSignal(int idx)
    bool closed_reenter_from_below = (rates[1].close > lower_buf[1]) && (rates[1].open < lower_buf[1]);
    bool closed_reenter_from_above = (rates[1].close < upper_buf[1]) && (rates[1].open > upper_buf[1]);
 
-   string filename = _Symbol + "_bb_" + TFToString(tf_min) + ".csv";
+   string filename = _Symbol + "_bb" + IntegerToString(g_bb_period[idx]) + "d" + DoubleToString(g_bb_deviation[idx], 1) + "_" + TFToString(tf_min) + ".csv";
    int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
    if(handle == INVALID_HANDLE) return;
 
@@ -1394,7 +1402,7 @@ void WriteADXSignal(int idx)
    bool adx_rising = (adx_buf[1] > adx_buf[2]) && (adx_buf[2] > adx_buf[3]);
    string di_bias = (pdi_buf[1] > mdi_buf[1]) ? "BULLISH" : "BEARISH";
 
-   string filename = _Symbol + "_adx_" + TFToString(tf_min) + ".csv";
+   string filename = _Symbol + "_adx" + IntegerToString(g_adx_period[idx]) + "_" + TFToString(tf_min) + ".csv";
    int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
    if(handle == INVALID_HANDLE) return;
 
@@ -1450,7 +1458,7 @@ void WriteMACDSignal(int idx)
    if(macd_buf[2] <= 0 && macd_buf[1] > 0) zero_cross = "CROSS_ABOVE";
    if(macd_buf[2] >= 0 && macd_buf[1] < 0) zero_cross = "CROSS_BELOW";
 
-   string filename = _Symbol + "_macd_" + TFToString(tf_min) + ".csv";
+   string filename = _Symbol + "_macd" + IntegerToString(g_macd_fast[idx]) + "_" + IntegerToString(g_macd_slow[idx]) + "_" + IntegerToString(g_macd_signal[idx]) + "_" + TFToString(tf_min) + ".csv";
    int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
    if(handle == INVALID_HANDLE) return;
 
@@ -1508,7 +1516,7 @@ void WriteStochSignal(int idx)
       else               closed_cross = "BEARISH";
    }
 
-   string filename = _Symbol + "_stoch_" + TFToString(tf_min) + ".csv";
+   string filename = _Symbol + "_stoch" + IntegerToString(g_stoch_k[idx]) + "_" + IntegerToString(g_stoch_d[idx]) + "_" + IntegerToString(g_stoch_slowing[idx]) + "_" + TFToString(tf_min) + ".csv";
    int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
    if(handle == INVALID_HANDLE) return;
 
@@ -1571,7 +1579,7 @@ void WriteATRSignal(int idx)
    // ATR as % of price
    double atr_pct = (tick.bid > 0) ? (atr_buf[0] / tick.bid) * 100.0 : 0;
 
-   string filename = _Symbol + "_atr_" + TFToString(tf_min) + ".csv";
+   string filename = _Symbol + "_atr" + IntegerToString(g_atr_period[idx]) + "_" + TFToString(tf_min) + ".csv";
    int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
    if(handle == INVALID_HANDLE) return;
 
