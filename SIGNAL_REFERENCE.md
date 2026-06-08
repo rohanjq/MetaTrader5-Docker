@@ -15,10 +15,10 @@ Files are updated every 5 seconds. Format: key-value CSV with `key,value` header
 <SYMBOL>_<indicator><params>_<timeframe>.csv
 ```
 
-Indicators with parameters include them in the name (e.g. `bb20d2.0`, `adx14`, `macd12_26_9`).
+Indicators with parameters include them in the name (e.g. `bb20d2`, `adx14`, `macd12_26_9`).
 Indicators without extra params use bare names (e.g. `utbot`, `dc`, `vwap`).
 
-Examples: `XAUUSD_utbot_M1.csv`, `XAUUSD_bb20d2.0_M1.csv`, `XAUUSD_adx14_M5.csv`, `XAUUSD_macd12_26_9_M3.csv`
+Examples: `XAUUSD_utbot_M1.csv`, `XAUUSD_bb20d2_M1.csv`, `XAUUSD_adx14_M5.csv`, `XAUUSD_macd12_26_9_M3.csv`
 
 ---
 
@@ -79,9 +79,9 @@ Config per instance: `TF:Period` (e.g. `1:14` = M1 with 14-period RSI)
 
 ### Bollinger Bands (`bb{period}d{dev}`)
 ```
-BTCUSDT_bb20d2.0_M1.csv
-BTCUSDT_bb20d2.0_M3.csv
-BTCUSDT_bb20d2.0_M5.csv
+BTCUSDT_bb20d2_M1.csv
+BTCUSDT_bb20d2_M3.csv
+BTCUSDT_bb20d2_M5.csv
 ```
 Config per instance: `TF:Period:Deviation` (e.g. `1:20:2.0` = M1 with 20-period, 2.0 std dev)
 

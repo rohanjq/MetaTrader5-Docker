@@ -1325,7 +1325,7 @@ void WriteBBSignal(int idx)
    bool closed_reenter_from_below = (rates[1].close > lower_buf[1]) && (rates[1].open < lower_buf[1]);
    bool closed_reenter_from_above = (rates[1].close < upper_buf[1]) && (rates[1].open > upper_buf[1]);
 
-   string filename = _Symbol + "_bb" + IntegerToString(g_bb_period[idx]) + "d" + DoubleToString(g_bb_deviation[idx], 1) + "_" + TFToString(tf_min) + ".csv";
+   string filename = _Symbol + "_bb" + IntegerToString(g_bb_period[idx]) + "d" + IntegerToString((int)g_bb_deviation[idx]) + "_" + TFToString(tf_min) + ".csv";
    int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
    if(handle == INVALID_HANDLE) return;
 
