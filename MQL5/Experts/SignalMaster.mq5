@@ -23,6 +23,7 @@ input string INP_MACD        = "1:12:26:9, 2:12:26:9, 3:12:26:9, 5:12:26:9, 10:1
 input string INP_STOCH       = "1:5:3:3, 2:5:3:3, 3:5:3:3, 5:5:3:3, 10:5:3:3, 15:5:3:3, 30:5:3:3, 60:5:3:3, 240:5:3:3"; // Stochastic → TF:K:D:Slowing
 input string INP_ATR         = "1:14, 2:14, 3:14, 5:14, 10:14, 15:14, 30:14, 60:14, 240:14";  // ATR → TF:Period
 input string INP_VWAP        = "1, 2, 3, 5, 10, 15, 30, 60, 240";  // VWAP → TF
+input string INP_Candle      = "1, 2, 3, 5, 10, 15, 30, 45, 60, 240";  // Candle → TF
 input int    WriteInterval   = 5;   // File write interval (seconds)
 
 //=== UT Bot state ====================================================
@@ -99,6 +100,10 @@ int    g_atr_handle[MAX_INST];
 int    g_vwap_count = 0;
 int    g_vwap_tf[MAX_INST];
 
+//=== Candle state ====================================================
+int    g_candle_count = 0;
+int    g_candle_tf[MAX_INST];
+
 //+------------------------------------------------------------------+
 //| Initialization                                                     |
 //+------------------------------------------------------------------+
@@ -115,6 +120,7 @@ int OnInit()
    ParseStochConfig(INP_STOCH);
    ParseATRConfig(INP_ATR);
    ParseVWAPConfig(INP_VWAP);
+   ParseCandleConfig(INP_Candle);
 
    for(int i = 0; i < g_utbot_count; i++)
    {
@@ -158,7 +164,8 @@ int OnInit()
          " | UTBot[", g_utbot_count, "] DC[", g_dc_count, "] LiqGrab[", g_liq_count,
          "] EMA[", g_ema_count, "] RSI[", g_rsi_count, "] BB[", g_bb_count,
          "] ADX[", g_adx_count, "] MACD[", g_macd_count, "] Stoch[", g_stoch_count,
-         "] ATR[", g_atr_count, "] VWAP[", g_vwap_count, "]");
+         "] ATR[", g_atr_count, "] VWAP[", g_vwap_count,
+         "] Candle[", g_candle_count, "]");
 
    return INIT_SUCCEEDED;
 }
@@ -218,6 +225,8 @@ void WriteAllSignals()
       WriteATRSignal(i);
    for(int i = 0; i < g_vwap_count; i++)
       WriteVWAPSignal(i);
+   for(int i = 0; i < g_candle_count; i++)
+      WriteCandleSignal(i);
 }
 
 //=====================================================================
@@ -410,6 +419,19 @@ void ParseVWAPConfig(string config)
    {
       StringTrimLeft(items[i]); StringTrimRight(items[i]);
       g_vwap_tf[i] = (int)StringToInteger(items[i]);
+   }
+}
+
+void ParseCandleConfig(string config)
+{
+   if(StringLen(config) == 0) return;
+   string items[];
+   int count = StringSplit(config, ',', items);
+   g_candle_count = MathMin(count, MAX_INST);
+   for(int i = 0; i < g_candle_count; i++)
+   {
+      StringTrimLeft(items[i]); StringTrimRight(items[i]);
+      g_candle_tf[i] = (int)StringToInteger(items[i]);
    }
 }
 
@@ -1697,5 +1719,138 @@ void WriteVWAPSignal(int idx)
    FileWrite(handle, "cum_volume",             DoubleToString(cum_vol, 0));
 
    FileClose(handle);
+}
+
+//=====================================================================
+//  CANDLE ANALYSIS  — comprehensive candle property writer
+//=====================================================================
+// Helper: compute candle fields for a single bar and write to CSV
+void WriteCandleBarFields(int handle, string prefix,
+                          double open, double high, double low, double close)
+{
+   double body_top    = MathMax(open, close);
+   double body_bottom = MathMin(open, close);
+   double body_size   = body_top - body_bottom;
+   double upper_wick  = high - body_top;
+   double lower_wick  = body_bottom - low;
+   double total_range = high - low;
+
+   // Prevent division by zero
+   double range_safe = (total_range > _Point) ? total_range : _Point;
+   double body_safe  = (body_size   > _Point) ? body_size   : _Point;
+
+   // Percentages (of total range)
+   double body_pct       = (body_size / range_safe) * 100.0;
+   double upper_wick_pct = (upper_wick / range_safe) * 100.0;
+   double lower_wick_pct = (lower_wick / range_safe) * 100.0;
+
+   // Ratios (wick / body) — 0.0 if doji
+   double upper_wick_ratio = (body_size > _Point) ? (upper_wick / body_safe) : 0.0;
+   double lower_wick_ratio = (body_size > _Point) ? (lower_wick / body_safe) : 0.0;
+
+   // Direction
+   string candle_dir = "DOJI";
+   if(close > open)       candle_dir = "UP";
+   else if(close < open)  candle_dir = "DOWN";
+
+   // Boolean flags
+   bool has_long_upper = (upper_wick >= 2.0 * body_safe) && (total_range > _Point);
+   bool has_long_lower = (lower_wick >= 2.0 * body_safe) && (total_range > _Point);
+   bool is_bullish     = (close > open);
+   bool is_bearish     = (close < open);
+
+   // Candle type classification
+   //   MARUBOZU:       body > 80% of range (strong move, tiny wicks)
+   //   DOJI:           body < 10% of range
+   //   HAMMER:         lower_wick >= 2x body AND upper_wick < body (bullish reversal)
+   //   SHOOTING_STAR:  upper_wick >= 2x body AND lower_wick < body (bearish reversal)
+   //   SPINNING_TOP:   body 10-40% of range, both wicks significant
+   //   NORMAL:         everything else
+   string candle_type = "NORMAL";
+   if(total_range <= _Point)
+      candle_type = "DOJI";
+   else if(body_pct >= 80.0)
+      candle_type = "MARUBOZU";
+   else if(body_pct < 10.0)
+      candle_type = "DOJI";
+   else if(lower_wick >= 2.0 * body_safe && upper_wick < body_safe)
+      candle_type = "HAMMER";
+   else if(upper_wick >= 2.0 * body_safe && lower_wick < body_safe)
+      candle_type = "SHOOTING_STAR";
+   else if(body_pct < 40.0 && upper_wick > 0.5 * body_safe && lower_wick > 0.5 * body_safe)
+      candle_type = "SPINNING_TOP";
+
+   // Write all fields
+   FileWrite(handle, prefix + "_body_size",         DoubleToString(body_size, _Digits));
+   FileWrite(handle, prefix + "_upper_wick_size",   DoubleToString(upper_wick, _Digits));
+   FileWrite(handle, prefix + "_lower_wick_size",   DoubleToString(lower_wick, _Digits));
+   FileWrite(handle, prefix + "_total_range",       DoubleToString(total_range, _Digits));
+   FileWrite(handle, prefix + "_body_pct",          DoubleToString(body_pct, 1));
+   FileWrite(handle, prefix + "_upper_wick_pct",    DoubleToString(upper_wick_pct, 1));
+   FileWrite(handle, prefix + "_lower_wick_pct",    DoubleToString(lower_wick_pct, 1));
+   FileWrite(handle, prefix + "_upper_wick_ratio",  DoubleToString(upper_wick_ratio, 2));
+   FileWrite(handle, prefix + "_lower_wick_ratio",  DoubleToString(lower_wick_ratio, 2));
+   FileWrite(handle, prefix + "_candle_dir",        candle_dir);
+   FileWrite(handle, prefix + "_candle_type",       candle_type);
+   FileWrite(handle, prefix + "_has_long_upper",    has_long_upper ? "TRUE" : "FALSE");
+   FileWrite(handle, prefix + "_has_long_lower",    has_long_lower ? "TRUE" : "FALSE");
+   FileWrite(handle, prefix + "_is_bullish",        is_bullish ? "TRUE" : "FALSE");
+   FileWrite(handle, prefix + "_is_bearish",        is_bearish ? "TRUE" : "FALSE");
+}
+
+void WriteCandleSignal(int idx)
+{
+   int tf_min = g_candle_tf[idx];
+   ENUM_TIMEFRAMES tf = MinToTF(tf_min);
+
+   MqlTick tick;
+   if(!SymbolInfoTick(_Symbol, tick)) return;
+
+   double opens[], highs[], lows[], closes[];
+   long   volumes[];
+   datetime times[];
+
+   if(!IsNativeTF(tf_min))
+   {
+      // Synthetic TF (e.g. M45)
+      int total = BuildSyntheticBars(tf_min, 3, opens, highs, lows, closes, volumes, times);
+      if(total < 2) return;
+
+      int run = total - 1;  // running bar (current)
+      int cls = total - 2;  // last closed bar
+
+      string filename = _Symbol + "_candle_" + TFToString(tf_min) + ".csv";
+      int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+      if(handle == INVALID_HANDLE) return;
+
+      WriteStdHeader(handle, "candle", tf_min);
+      WriteBarFields(handle, "running", opens[run], highs[run], lows[run], closes[run], times[run], volumes[run]);
+      WriteBarFields(handle, "closed",  opens[cls], highs[cls], lows[cls], closes[cls], times[cls], volumes[cls]);
+
+      WriteCandleBarFields(handle, "running", opens[run], highs[run], lows[run], closes[run]);
+      WriteCandleBarFields(handle, "closed",  opens[cls], highs[cls], lows[cls], closes[cls]);
+
+      FileClose(handle);
+   }
+   else
+   {
+      // Native TF
+      MqlRates rates[];
+      ArraySetAsSeries(rates, true);
+      if(CopyRates(_Symbol, tf, 0, 2, rates) < 2) return;
+
+      string filename = _Symbol + "_candle_" + TFToString(tf_min) + ".csv";
+      int handle = FileOpen(filename, FILE_WRITE | FILE_CSV | FILE_COMMON, ',');
+      if(handle == INVALID_HANDLE) return;
+
+      WriteStdHeader(handle, "candle", tf_min);
+      WriteBarFields(handle, "running", rates[0].open, rates[0].high, rates[0].low, rates[0].close, rates[0].time, rates[0].tick_volume);
+      WriteBarFields(handle, "closed",  rates[1].open, rates[1].high, rates[1].low, rates[1].close, rates[1].time, rates[1].tick_volume);
+
+      WriteCandleBarFields(handle, "running", rates[0].open, rates[0].high, rates[0].low, rates[0].close);
+      WriteCandleBarFields(handle, "closed",  rates[1].open, rates[1].high, rates[1].low, rates[1].close);
+
+      FileClose(handle);
+   }
 }
 //+------------------------------------------------------------------+
