@@ -2,7 +2,7 @@
 import sys
 from mt5linux import MetaTrader5
 
-symbol = sys.argv[1] if len(sys.argv) > 1 else "BTCUSDT"
+symbol = sys.argv[1] if len(sys.argv) > 1 else "XAUUSD"
 
 mt5 = MetaTrader5(host="localhost", port=8001)
 mt5.initialize()
