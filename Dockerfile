@@ -26,12 +26,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy startup scripts + bundled MQL5 source files
-COPY /Metatrader /Metatrader
-COPY /MQL5 /Metatrader/MQL5
+COPY MetaTrader5-Docker/Metatrader /Metatrader
+COPY mt5-trader/MQL5 /Metatrader/MQL5
 RUN chmod +x /Metatrader/start.sh
 
 # KasmVNC defaults (autostart, right-click menu)
-COPY /root /
+COPY MetaTrader5-Docker/root /
 
 EXPOSE 3000 8001
 VOLUME /config /data
