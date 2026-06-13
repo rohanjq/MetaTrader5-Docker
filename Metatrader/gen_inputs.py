@@ -69,6 +69,9 @@ def generate_tester_section(cfg):
     lines.append("OptimizationCriterion=0")
     lines.append("Visual=0")
     lines.append("ShutdownTerminal=1")
+    lines.append("UseLocal=1")
+    lines.append("UseRemote=0")
+    lines.append("UseCloud=0")
     lines.append("ReplaceReport=1")
     lines.append(r"Report=reports\backtest_report")
     return lines
