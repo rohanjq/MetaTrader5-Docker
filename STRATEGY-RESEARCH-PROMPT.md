@@ -213,11 +213,24 @@ python3 tools/parse_report.py data/reports/backtest_report.htm --human --all
 - **Consecutive losses < 6** — long streaks signal the strategy is fundamentally broken
 
 ### If a strategy doesn't work:
-- Try adjusting SL (tighter or wider) — 300, 500, 800 are good starting points for BTC
-- Try adjusting RR — 1.0, 1.5, 2.0
+- Try adjusting SL (tighter or wider) — 200, 300, 500, 800 are good starting points for BTC
+- Try adjusting RR — 1.0, 1.25, 1.5, 2.0, 2.5
+- Try **tight SL + high RR** combos (e.g. SL=200, RR=2.0) for sniper entries
+- Try **wide SL + low RR** combos (e.g. SL=800, RR=1.0) for high win-rate setups
+- Try enabling **breakeven** — set `breakeven_start` to ~50% of your TP distance so the SL moves to entry once price goes halfway in your favor. Example: if SL=500 and RR=1.5, TP=750, set `breakeven_start: 375.0`. This protects winners from reversing back to a loss.
+- Try all permutations — SL/RR/breakeven combos can turn a losing strategy into a winner
 - Try adding/removing one filter condition
 - Try on a different entry timeframe (M3 vs M5 vs M15)
-- If it consistently loses, DISCARD IT and move on. Don't over-optimize a bad idea.
+- If it consistently loses after 3-4 SL/RR/breakeven combos, DISCARD IT and move on.
+
+### Breakeven usage in config:
+```yaml
+trailing:
+  breakeven_start: 250.0   # Move SL to entry after $250 profit (0=off)
+  trail_start: 0.0         # Can also try trailing (start after $X profit)
+  trail_step: 2.0          # Trail distance in dollars
+```
+Set `breakeven_start` to roughly 40-60% of your expected TP distance. This is especially powerful for trap-catching strategies where the initial move in your favor is strong but may retrace.
 
 ---
 
@@ -303,9 +316,11 @@ For each strategy:
 8. If it's garbage after 2-3 tuning attempts, dump it and try a different idea
 
 ### SL/RR guidelines for BTCUSDT:
-- SL range to try: 200, 350, 500, 800 (in dollars = price distance)
-- RR range to try: 1.0, 1.5, 2.0, 2.5
-- Start with SL=500 RR=1.5 as baseline
+- **Tight scalp:** SL=200, RR=1.5-2.0 (small risk, needs precise entry)
+- **Standard:** SL=300-500, RR=1.25-1.5 (balanced)
+- **Wide net:** SL=800, RR=1.0-1.25 (higher win rate, needs good filtering)
+- Start with SL=500 RR=1.5 as baseline, then try tight (200) and wide (800)
+- **Always try breakeven** on promising strategies — set `breakeven_start` to ~50% of TP
 
 ---
 
