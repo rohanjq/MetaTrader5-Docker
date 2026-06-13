@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """
-Parse MT5 Strategy Tester HTML report → JSON or CSV.
+Parse MT5 Strategy Tester HTML report → JSON, CSV, or human-readable.
 
 Usage:
-  python3 parse_report.py backtest_report.htm                # JSON to stdout
-  python3 parse_report.py backtest_report.htm --csv           # CSV to stdout
-  python3 parse_report.py backtest_report.htm -o results.json # save to file
-  python3 parse_report.py backtest_report.htm --csv -o out/   # CSV files to dir
+  python3 parse_report.py report.htm                   # JSON summary
+  python3 parse_report.py report.htm --deals             # JSON deals only
+  python3 parse_report.py report.htm --orders            # JSON orders only
+  python3 parse_report.py report.htm --all               # JSON everything
+  python3 parse_report.py report.htm --csv --deals       # CSV deals
+  python3 parse_report.py report.htm --human             # quick human summary
+  python3 parse_report.py report.htm --human --deals     # human deals + breakdown
+  python3 parse_report.py report.htm --human --all       # human everything
+  python3 parse_report.py report.htm -o results.json     # save to file
+  python3 parse_report.py report.htm --csv --all -o out/  # CSV files to dir
 """
 import argparse
 import csv
@@ -144,13 +150,101 @@ def enrich_deals(deals):
     return deals
 
 
-def build_output(html):
-    """Build full parsed output."""
-    return {
-        "summary": parse_results(html),
-        "orders": parse_orders(html),
-        "deals": enrich_deals(parse_deals(html)),
-    }
+# -- Key metrics for --human output --
+HUMAN_METRICS = [
+    "Total Net Profit",
+    "Profit Factor",
+    "Total Trades",
+    "Profit Trades (% of total)",
+    "Loss Trades (% of total)",
+    "Expected Payoff",
+    "Sharpe Ratio",
+    "Recovery Factor",
+    "Balance Drawdown Maximal",
+    "Equity Drawdown Maximal",
+    "Largest profit trade",
+    "Largest loss trade",
+    "Average profit trade",
+    "Average loss trade",
+    "Maximum consecutive wins ($)",
+    "Maximum consecutive losses ($)",
+    "Average consecutive wins",
+    "Average consecutive losses",
+    "Short Trades (won %)",
+    "Long Trades (won %)",
+    "Minimal position holding time",
+    "Maximal position holding time",
+    "Average position holding time",
+]
+
+
+def write_human(data, dest):
+    """Write a compact human-readable summary."""
+    lines = []
+
+    if "summary" in data:
+        summary = data["summary"]
+        lines.append("═══ BACKTEST SUMMARY ═══")
+        lines.append("")
+        for key in HUMAN_METRICS:
+            val = summary.get(key)
+            if val is not None:
+                lines.append(f"  {key:<40s} {val}")
+
+    if "deals" in data:
+        deals = [d for d in data["deals"] if d.get("type") not in ("balance",)]
+        if deals:
+            lines.append("")
+            lines.append("═══ DEALS ═══")
+            lines.append(f"  {'Time':<22s} {'Type':<6s} {'Dir':<4s} {'Vol':>6s} {'Price':>12s} {'Profit':>10s} {'Strategy'}")
+            lines.append("  " + "─" * 90)
+            for d in deals:
+                lines.append(
+                    f"  {d['time']:<22s} {d['type']:<6s} {d['direction']:<4s} "
+                    f"{d['volume']:>6s} {d['price']:>12s} {d['profit']:>10s} "
+                    f"{d.get('strategy', '')}"
+                )
+
+        # Per-strategy breakdown
+        entry_deals = [d for d in data["deals"]
+                       if d.get("direction") == "in" and d.get("strategy")]
+        if entry_deals:
+            strat_stats = {}
+            for d in entry_deals:
+                s = d["strategy"]
+                if s not in strat_stats:
+                    strat_stats[s] = {"count": 0, "buy": 0, "sell": 0}
+                strat_stats[s]["count"] += 1
+                if d["type"] == "buy":
+                    strat_stats[s]["buy"] += 1
+                else:
+                    strat_stats[s]["sell"] += 1
+
+            lines.append("")
+            lines.append("═══ BY STRATEGY ═══")
+            lines.append(f"  {'Strategy':<40s} {'Trades':>6s} {'Buys':>6s} {'Sells':>6s}")
+            lines.append("  " + "─" * 60)
+            for s, st in sorted(strat_stats.items(), key=lambda x: -x[1]["count"]):
+                lines.append(f"  {s:<40s} {st['count']:>6d} {st['buy']:>6d} {st['sell']:>6d}")
+
+    if "orders" in data and data["orders"]:
+        lines.append("")
+        lines.append("═══ ORDERS ═══")
+        lines.append(f"  {'Open Time':<22s} {'Type':<6s} {'Volume':>8s} {'Price':>12s} {'SL':>12s} {'TP':>12s} {'Comment'}")
+        lines.append("  " + "─" * 95)
+        for o in data["orders"]:
+            lines.append(
+                f"  {o['open_time']:<22s} {o['type']:<6s} {o['volume']:>8s} "
+                f"{o['price']:>12s} {o['sl']:>12s} {o['tp']:>12s} {o['comment']}"
+            )
+
+    output = "\n".join(lines) + "\n"
+    if dest:
+        with open(dest, "w") as f:
+            f.write(output)
+        print(f"Written to {dest}", file=sys.stderr)
+    else:
+        print(output)
 
 
 def write_json(data, dest):
@@ -166,7 +260,7 @@ def write_json(data, dest):
 
 def write_csv(data, dest):
     """Write CSV output — one file per section, or combined to stdout."""
-    sections = {"summary": None, "orders": None, "deals": None}
+    sections = {}
 
     # Summary as key-value CSV
     buf = io.StringIO()
@@ -177,7 +271,7 @@ def write_csv(data, dest):
     sections["summary"] = buf.getvalue()
 
     # Orders
-    if data["orders"]:
+    if "orders" in data and data["orders"]:
         buf = io.StringIO()
         cols = list(data["orders"][0].keys())
         w = csv.DictWriter(buf, fieldnames=cols)
@@ -186,7 +280,7 @@ def write_csv(data, dest):
         sections["orders"] = buf.getvalue()
 
     # Deals
-    if data["deals"]:
+    if "deals" in data and data["deals"]:
         buf = io.StringIO()
         cols = list(data["deals"][0].keys())
         w = csv.DictWriter(buf, fieldnames=cols)
@@ -215,16 +309,38 @@ def write_csv(data, dest):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Parse MT5 backtest HTML report → JSON/CSV")
+    parser = argparse.ArgumentParser(description="Parse MT5 backtest HTML report → JSON/CSV/human")
     parser.add_argument("report", help="Path to backtest_report.htm")
-    parser.add_argument("--csv", action="store_true", help="Output CSV instead of JSON")
+    fmt = parser.add_mutually_exclusive_group()
+    fmt.add_argument("--json", action="store_true", default=True, help="JSON output (default)")
+    fmt.add_argument("--csv", action="store_true", help="CSV output")
+    fmt.add_argument("--human", action="store_true", help="Human-readable summary")
+    section = parser.add_mutually_exclusive_group()
+    section.add_argument("--summary", action="store_true", help="Summary stats only (default)")
+    section.add_argument("--deals", action="store_true", help="Deals table only")
+    section.add_argument("--orders", action="store_true", help="Orders table only")
+    section.add_argument("--all", action="store_true", help="All sections")
     parser.add_argument("-o", "--output", default=None, help="Output file or directory (for CSV)")
     args = parser.parse_args()
 
-    html = read_html(args.report)
-    data = build_output(html)
+    # Default to summary if no section specified
+    if not (args.deals or args.orders or args.all):
+        args.summary = True
 
-    if args.csv:
+    html = read_html(args.report)
+
+    # Build only what's needed
+    data = {}
+    if args.summary or args.all:
+        data["summary"] = parse_results(html)
+    if args.deals or args.all:
+        data["deals"] = enrich_deals(parse_deals(html))
+    if args.orders or args.all:
+        data["orders"] = parse_orders(html)
+
+    if args.human:
+        write_human(data, args.output)
+    elif args.csv:
         write_csv(data, args.output)
     else:
         write_json(data, args.output)
