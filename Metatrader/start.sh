@@ -275,6 +275,22 @@ else
 fi
 
 # ============================================================
+# [6c] Symlink logs to /data/logs for easy access
+# ============================================================
+MT5_MQL5_LOGS="$MT5_MQL5_DIR/logs"
+MT5_TERMINAL_LOGS="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/logs"
+mkdir -p "$MT5_MQL5_LOGS"
+
+if [ ! -L "$LOGS_DIR/experts" ]; then
+    ln -sf "$MT5_MQL5_LOGS" "$LOGS_DIR/experts"
+    log "  EA logs symlinked → /data/logs/experts/"
+fi
+if [ ! -L "$LOGS_DIR/terminal" ]; then
+    ln -sf "$MT5_TERMINAL_LOGS" "$LOGS_DIR/terminal"
+    log "  Terminal logs symlinked → /data/logs/terminal/"
+fi
+
+# ============================================================
 # [7/7] Launch MT5 terminal + rpyc server
 # ============================================================
 if [ -e "$MT5_EXE" ]; then
