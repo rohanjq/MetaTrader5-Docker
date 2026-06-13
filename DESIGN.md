@@ -419,6 +419,16 @@ Applied in order in `OnTick()`:
 
 Strategies are evaluated in order (S01 first, S20 last). The **first** strategy whose conditions match fires the trade. This means S01 has highest priority. After a trade is executed, `OnTick()` returns immediately — no further strategies are evaluated until the next tick.
 
+### Per-Strategy Magic Numbers
+
+Each strategy gets its own magic number: `INP_Magic + strategy_index` (0-based). So if `INP_Magic=300`, S01 gets 300, S02 gets 301, etc.
+
+Helper functions:
+- `IsOurMagic(magic)` — returns true if magic is in range `[INP_Magic, INP_Magic + g_stratCount)`
+- `MagicToStratIdx(magic)` — returns strategy index, or -1 if out of range
+
+All position/deal filters (`ManageTrailingStop`, `CountOpenPositions`, `OnTrade`) use `IsOurMagic()` instead of checking `== INP_Magic`. `OnTrade` uses `MagicToStratIdx()` to attribute deals to strategies by magic number (more reliable than comment parsing since some brokers modify deal comments).
+
 ---
 
 ## 8. Trailing Stop (`ManageTrailingStop`)
@@ -449,9 +459,9 @@ Breakeven is a one-time event. Once SL is at entry, the trailing logic takes ove
 
 1. Selects full deal history via `HistorySelect(0, TimeCurrent())`.
 2. Iterates only new deals since last check (`g_lastDealCount`).
-3. Filters for our magic number and exit deals only (`DEAL_ENTRY_OUT`).
+3. Filters for our magic number range (`IsOurMagic()`) and exit deals only (`DEAL_ENTRY_OUT`).
 4. Computes net profit (profit + swap + commission).
-5. Matches the deal's comment to a strategy name via `StringFind`.
+5. Matches the deal to a strategy via `MagicToStratIdx(dealMagic)`.
 6. Updates per-strategy W/L/PnL and global counters.
 7. Resets `g_consecLosses` on a win, increments on a loss.
 

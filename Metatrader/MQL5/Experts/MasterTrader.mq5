@@ -248,6 +248,7 @@ struct Strategy
    double rr;
    string buyCond;
    string sellCond;
+   int    magic;
    int    wins;
    int    losses;
    int    totalTrades;
@@ -352,7 +353,7 @@ int OnInit()
    Print("MasterTrader v2.1 | ", _Symbol,
          " | Strats: ", enabled, "/", g_stratCount,
          " | Risk: ", INP_RiskPct, "%",
-         " | Magic: ", INP_Magic);
+         " | Magic: ", INP_Magic, "-", INP_Magic + g_stratCount - 1);
 
    // Debug: log symbol trade mode to diagnose 10044 close-only errors
    ENUM_SYMBOL_TRADE_MODE tradeMode = (ENUM_SYMBOL_TRADE_MODE)SymbolInfoInteger(_Symbol, SYMBOL_TRADE_MODE);
@@ -436,6 +437,7 @@ void AddStrat(string name, bool on, double sl, double rr,
    g_strats[i].rr         = rr;
    g_strats[i].buyCond    = buyCond;
    g_strats[i].sellCond   = sellCond;
+   g_strats[i].magic      = INP_Magic + i;
    g_strats[i].wins       = 0;
    g_strats[i].losses     = 0;
    g_strats[i].totalTrades = 0;
@@ -544,7 +546,8 @@ void OnTrade()
    {
       ulong ticket = HistoryDealGetTicket(i);
       if(ticket == 0) continue;
-      if(HistoryDealGetInteger(ticket, DEAL_MAGIC) != INP_Magic) continue;
+      long dealMagic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+      if(!IsOurMagic(dealMagic)) continue;
       if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
 
       double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT)
@@ -552,23 +555,14 @@ void OnTrade()
                     + HistoryDealGetDouble(ticket, DEAL_COMMISSION);
       string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
 
-      // Extract strategy name from comment "MT|strategy_name" for exact matching
-      // Use StringFind >= 0 to handle brokers that prepend text (e.g. "[sl] MT|name")
-      string matchName = "";
-      int mtPos = StringFind(comment, "MT|");
-      if(mtPos >= 0)
-         matchName = StringSubstr(comment, mtPos + 3);
-
-      for(int s = 0; s < g_stratCount; s++)
+      // Match strategy by magic number (magic = INP_Magic + strategy_index)
+      int stratIdx = MagicToStratIdx(dealMagic);
+      if(stratIdx >= 0)
       {
-         if(matchName != "" && matchName == g_strats[s].name)
-         {
-            g_strats[s].totalTrades++;
-            g_strats[s].pnl += profit;
-            if(profit >= 0) g_strats[s].wins++;
-            else            g_strats[s].losses++;
-            break;
-         }
+         g_strats[stratIdx].totalTrades++;
+         g_strats[stratIdx].pnl += profit;
+         if(profit >= 0) g_strats[stratIdx].wins++;
+         else            g_strats[stratIdx].losses++;
       }
 
       g_totalTrades++;
@@ -1222,6 +1216,8 @@ bool EvalAllConditions(string conditions)
 //=====================================================================
 void ExecuteTrade(int stratIdx, ENUM_ORDER_TYPE type)
 {
+   g_trade.SetExpertMagicNumber(g_strats[stratIdx].magic);
+
    MqlTick tick;
    if(!SymbolInfoTick(_Symbol, tick)) return;
 
@@ -1316,7 +1312,7 @@ void ManageTrailingStop()
       ulong ticket = PositionGetTicket(i);
       if(ticket == 0) continue;
       if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
-      if(PositionGetInteger(POSITION_MAGIC) != INP_Magic) continue;
+      if(!IsOurMagic(PositionGetInteger(POSITION_MAGIC))) continue;
 
       double entry = PositionGetDouble(POSITION_PRICE_OPEN);
       double sl    = PositionGetDouble(POSITION_SL);
@@ -1364,6 +1360,18 @@ void ManageTrailingStop()
 //=====================================================================
 //  SECTION 10: POSITION HELPERS
 //=====================================================================
+bool IsOurMagic(long magic)
+{
+   return (magic >= INP_Magic && magic < INP_Magic + g_stratCount);
+}
+
+int MagicToStratIdx(long magic)
+{
+   int idx = (int)(magic - INP_Magic);
+   if(idx >= 0 && idx < g_stratCount) return idx;
+   return -1;
+}
+
 int CountOpenPositions()
 {
    int count = 0;
@@ -1372,7 +1380,7 @@ int CountOpenPositions()
       ulong ticket = PositionGetTicket(i);
       if(ticket == 0) continue;
       if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
-      if(PositionGetInteger(POSITION_MAGIC) == INP_Magic) count++;
+      if(IsOurMagic(PositionGetInteger(POSITION_MAGIC))) count++;
    }
    return count;
 }
