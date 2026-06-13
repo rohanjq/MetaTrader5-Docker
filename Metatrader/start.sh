@@ -312,11 +312,22 @@ if [ -e "$MT5_EXE" ]; then
 
         # Seed desktop symbol specs so tester has SYMBOL_TRADE_MODE_FULL
         # (broker returns CLOSEONLY during weekends; cached specs avoid this)
-        bases_dir="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/bases/PXBTTrading-1"
+        # Actual path: Bases/PXBTTrading-1/symbols/symbols-1262395.dat
+        _login=$(grep -i "^Login=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
+        _password=$(grep -i "^Password=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
+        _server=$(grep -i "^Server=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
+        symbols_dir="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/Bases/${_server}/symbols"
         if [ -d "/Metatrader/bases/PXBTTrading-1" ]; then
-            mkdir -p "$bases_dir"
-            cp -n /Metatrader/bases/PXBTTrading-1/*.dat "$bases_dir/" 2>/dev/null || true
-            log "[7/7] Seeded symbol specs from image → bases/PXBTTrading-1/"
+            mkdir -p "$symbols_dir"
+            for f in /Metatrader/bases/PXBTTrading-1/*.dat; do
+                fname=$(basename "$f")
+                # Rename generic files to account-specific: symbols.dat → symbols-LOGIN.dat
+                target_name=$(echo "$fname" | sed "s/\.dat$/-${_login}.dat/")
+                if [ ! -f "$symbols_dir/$target_name" ]; then
+                    cp "$f" "$symbols_dir/$target_name"
+                    log "[7/7] Seeded $target_name → Bases/${_server}/symbols/"
+                fi
+            done
         fi
 
         # Clean stale tester agent data from previous runs
@@ -329,9 +340,6 @@ if [ -e "$MT5_EXE" ]; then
         # Build single config: [Common] (auth) + [Tester] (testing)
         # Terminal authenticates, syncs, then auto-starts tester in same session
         # (matches desktop behavior where tester runs inside running terminal)
-        _login=$(grep -i "^Login=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
-        _password=$(grep -i "^Password=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
-        _server=$(grep -i "^Server=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
         {
             echo "[Common]"
             echo "Login=${_login}"
