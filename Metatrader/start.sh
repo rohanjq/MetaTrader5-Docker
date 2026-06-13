@@ -281,12 +281,13 @@ MT5_MQL5_LOGS="$MT5_MQL5_DIR/logs"
 MT5_TERMINAL_LOGS="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/logs"
 mkdir -p "$MT5_MQL5_LOGS"
 
+# Use relative symlinks so they resolve on the host too
 if [ ! -L "$LOGS_DIR/experts" ]; then
-    ln -sf "$MT5_MQL5_LOGS" "$LOGS_DIR/experts"
+    ln -sfr "$MT5_MQL5_LOGS" "$LOGS_DIR/experts"
     log "  EA logs symlinked → /data/logs/experts/"
 fi
 if [ ! -L "$LOGS_DIR/terminal" ]; then
-    ln -sf "$MT5_TERMINAL_LOGS" "$LOGS_DIR/terminal"
+    ln -sfr "$MT5_TERMINAL_LOGS" "$LOGS_DIR/terminal"
     log "  Terminal logs symlinked → /data/logs/terminal/"
 fi
 
