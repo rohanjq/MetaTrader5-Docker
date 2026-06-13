@@ -60,143 +60,163 @@ input int    INP_ControlPollSec  = 5;      // Poll interval (sec)
 //              .live_*  (same fields on running bar)
 // ────────────────────────────────────────────────────────────────────
 
-input group "=== S01: dc_wick_rejection ==="
-input bool   S01_On   = true;
-input double S01_SL   = 5.0;
-input double S01_RR   = 1.0;
-input string S01_Buy  = "dc_M15.lower_wick_rej==TRUE|utbot_M3.bias==BULLISH";
-input string S01_Sell = "dc_M15.upper_wick_rej==TRUE|utbot_M3.bias==BEARISH";
+input group "=== S01: Strategy 1 ==="
+input bool   S01_On   = false;
+input double S01_SL   = 0;
+input double S01_RR   = 0;
+input string S01_Name = "s01";
+input string S01_Buy  = "";
+input string S01_Sell = "";
 
-input group "=== S02: trend_2w_m2_ema50_bounce2_vwap ==="
-input bool   S02_On   = true;
-input double S02_SL   = 7.5;
-input double S02_RR   = 1.0;
+input group "=== S02: Strategy 2 ==="
+input bool   S02_On   = false;
+input double S02_SL   = 0;
+input double S02_RR   = 0;
+input string S02_Name = "s02";
 input string S02_Buy  = "";
-input string S02_Sell = "utbot_M2.signal==SELL|ema50_M5.price_vs==BELOW|utbot_M5.bullish_since>=2|vwap_M1.price_vs==BELOW";
+input string S02_Sell = "";
 
-input group "=== S03: trend_2w_m2_m15bear_bounce2_vwap ==="
-input bool   S03_On   = true;
-input double S03_SL   = 7.5;
-input double S03_RR   = 1.0;
+input group "=== S03: Strategy 3 ==="
+input bool   S03_On   = false;
+input double S03_SL   = 0;
+input double S03_RR   = 0;
+input string S03_Name = "s03";
 input string S03_Buy  = "";
-input string S03_Sell = "utbot_M2.signal==SELL|utbot_M15.bias==BEARISH|utbot_M5.bullish_since>=2|vwap_M1.price_vs==BELOW";
+input string S03_Sell = "";
 
-input group "=== S04: dc2w_m3_h1bear_dcupper_vwap ==="
-input bool   S04_On   = true;
-input double S04_SL   = 7.5;
-input double S04_RR   = 1.0;
+input group "=== S04: Strategy 4 ==="
+input bool   S04_On   = false;
+input double S04_SL   = 0;
+input double S04_RR   = 0;
+input string S04_Name = "s04";
 input string S04_Buy  = "";
-input string S04_Sell = "utbot_M3.signal==SELL|utbot_H1.bias==BEARISH|dc_M15.zone in UPPER,UPPER_MID|vwap_M1.price_vs==BELOW";
+input string S04_Sell = "";
 
-input group "=== S05: hammer_2w_m15_dc ==="
-input bool   S05_On   = true;
-input double S05_SL   = 7.5;
-input double S05_RR   = 1.0;
-input string S05_Buy  = "candle_M3.type==HAMMER|utbot_M5.bearish_since>=2|utbot_M15.bias==BULLISH|dc_M15.zone in LOWER,LOWER_MID";
+input group "=== S05: Strategy 5 ==="
+input bool   S05_On   = false;
+input double S05_SL   = 0;
+input double S05_RR   = 0;
+input string S05_Name = "s05";
+input string S05_Buy  = "";
 input string S05_Sell = "";
 
-input group "=== S06: doji_dc_upper_m15 ==="
-input bool   S06_On   = true;
-input double S06_SL   = 7.5;
-input double S06_RR   = 1.0;
+input group "=== S06: Strategy 6 ==="
+input bool   S06_On   = false;
+input double S06_SL   = 0;
+input double S06_RR   = 0;
+input string S06_Name = "s06";
 input string S06_Buy  = "";
-input string S06_Sell = "candle_M3.type==DOJI|dc_M15.zone in UPPER,UPPER_MID|utbot_M15.bias==BEARISH";
+input string S06_Sell = "";
 
-input group "=== S07: shstar_m5_m15 ==="
-input bool   S07_On   = true;
-input double S07_SL   = 7.5;
-input double S07_RR   = 1.0;
+input group "=== S07: Strategy 7 ==="
+input bool   S07_On   = false;
+input double S07_SL   = 0;
+input double S07_RR   = 0;
+input string S07_Name = "s07";
 input string S07_Buy  = "";
-input string S07_Sell = "candle_M5.type==SHOOTING_STAR|utbot_M15.bias==BEARISH";
+input string S07_Sell = "";
 
-input group "=== S08: wick2x_dc_h1_vwap_sell ==="
-input bool   S08_On   = true;
-input double S08_SL   = 7.5;
-input double S08_RR   = 1.0;
+input group "=== S08: Strategy 8 ==="
+input bool   S08_On   = false;
+input double S08_SL   = 0;
+input double S08_RR   = 0;
+input string S08_Name = "s08";
 input string S08_Buy  = "";
-input string S08_Sell = "candle_M3.upper_wick_ratio>=2|candle_M3.is_bearish==TRUE|dc_M15.zone in UPPER,UPPER_MID|utbot_H1.bias==BEARISH|vwap_M1.price_vs==BELOW";
+input string S08_Sell = "";
 
-input group "=== S09: dc_mid_hammer_2w_m15 ==="
-input bool   S09_On   = true;
-input double S09_SL   = 7.5;
-input double S09_RR   = 1.0;
-input string S09_Buy  = "dc_M5.zone==MIDDLE|utbot_M5.bearish_since>=2|candle_M3.type==HAMMER|utbot_M15.bias==BULLISH";
+input group "=== S09: Strategy 9 ==="
+input bool   S09_On   = false;
+input double S09_SL   = 0;
+input double S09_RR   = 0;
+input string S09_Name = "s09";
+input string S09_Buy  = "";
 input string S09_Sell = "";
 
-input group "=== S10: dc_mid_shstar_2w_m15 ==="
-input bool   S10_On   = true;
-input double S10_SL   = 7.5;
-input double S10_RR   = 1.0;
+input group "=== S10: Strategy 10 ==="
+input bool   S10_On   = false;
+input double S10_SL   = 0;
+input double S10_RR   = 0;
+input string S10_Name = "s10";
 input string S10_Buy  = "";
-input string S10_Sell = "dc_M5.zone==MIDDLE|utbot_M5.bullish_since>=2|candle_M3.type==SHOOTING_STAR|utbot_M15.bias==BEARISH";
+input string S10_Sell = "";
 
-input group "=== S11: dc_lowmid_hammer_2w_m15 ==="
-input bool   S11_On   = true;
-input double S11_SL   = 7.5;
-input double S11_RR   = 1.0;
-input string S11_Buy  = "dc_M5.zone in LOWER_MID,MIDDLE|utbot_M5.bearish_since>=2|candle_M3.type==HAMMER|utbot_M15.bias==BULLISH";
+input group "=== S11: Strategy 11 ==="
+input bool   S11_On   = false;
+input double S11_SL   = 0;
+input double S11_RR   = 0;
+input string S11_Name = "s11";
+input string S11_Buy  = "";
 input string S11_Sell = "";
 
-input group "=== S12: dc_upmid_shstar_2w_m15 ==="
-input bool   S12_On   = true;
-input double S12_SL   = 7.5;
-input double S12_RR   = 1.0;
+input group "=== S12: Strategy 12 ==="
+input bool   S12_On   = false;
+input double S12_SL   = 0;
+input double S12_RR   = 0;
+input string S12_Name = "s12";
 input string S12_Buy  = "";
-input string S12_Sell = "dc_M5.zone in UPPER_MID,MIDDLE|utbot_M5.bullish_since>=2|candle_M3.type==SHOOTING_STAR|utbot_M15.bias==BEARISH";
+input string S12_Sell = "";
 
-input group "=== S13: rsi2_mean_rev_full ==="
-input bool   S13_On   = true;
-input double S13_SL   = 3.0;
-input double S13_RR   = 1.5;
-input string S13_Buy  = "rsi2_M5.zone==EXTREME_OS|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING|utbot_H1.bias==BULLISH";
+input group "=== S13: Strategy 13 ==="
+input bool   S13_On   = false;
+input double S13_SL   = 0;
+input double S13_RR   = 0;
+input string S13_Name = "s13";
+input string S13_Buy  = "";
 input string S13_Sell = "";
 
-input group "=== S14: ema50_dc_wick_h1 ==="
-input bool   S14_On   = true;
-input double S14_SL   = 3.0;
-input double S14_RR   = 2.0;
-input string S14_Buy  = "ema50_M15.slope==RISING|dc_M15.lower_wick_rej==TRUE|utbot_H1.bias==BULLISH";
+input group "=== S14: Strategy 14 ==="
+input bool   S14_On   = false;
+input double S14_SL   = 0;
+input double S14_RR   = 0;
+input string S14_Name = "s14";
+input string S14_Buy  = "";
 input string S14_Sell = "";
 
-input group "=== S15: rsi2_dc_wick ==="
-input bool   S15_On   = true;
-input double S15_SL   = 3.0;
-input double S15_RR   = 1.0;
-input string S15_Buy  = "rsi2_M5.zone==EXTREME_OS|ema200_M15.price_vs==ABOVE|dc_M15.lower_wick_rej==TRUE";
+input group "=== S15: Strategy 15 ==="
+input bool   S15_On   = false;
+input double S15_SL   = 0;
+input double S15_RR   = 0;
+input string S15_Name = "s15";
+input string S15_Buy  = "";
 input string S15_Sell = "";
 
-input group "=== S16: (custom) ==="
+input group "=== S16: Strategy 16 ==="
 input bool   S16_On   = false;
 input double S16_SL   = 0;
 input double S16_RR   = 0;
+input string S16_Name = "s16";
 input string S16_Buy  = "";
 input string S16_Sell = "";
 
-input group "=== S17: (custom) ==="
+input group "=== S17: Strategy 17 ==="
 input bool   S17_On   = false;
 input double S17_SL   = 0;
 input double S17_RR   = 0;
+input string S17_Name = "s17";
 input string S17_Buy  = "";
 input string S17_Sell = "";
 
-input group "=== S18: (custom) ==="
+input group "=== S18: Strategy 18 ==="
 input bool   S18_On   = false;
 input double S18_SL   = 0;
 input double S18_RR   = 0;
+input string S18_Name = "s18";
 input string S18_Buy  = "";
 input string S18_Sell = "";
 
-input group "=== S19: (custom) ==="
+input group "=== S19: Strategy 19 ==="
 input bool   S19_On   = false;
 input double S19_SL   = 0;
 input double S19_RR   = 0;
+input string S19_Name = "s19";
 input string S19_Buy  = "";
 input string S19_Sell = "";
 
-input group "=== S20: (custom) ==="
+input group "=== S20: Strategy 20 ==="
 input bool   S20_On   = false;
 input double S20_SL   = 0;
 input double S20_RR   = 0;
+input string S20_Name = "s20";
 input string S20_Buy  = "";
 input string S20_Sell = "";
 
@@ -379,26 +399,26 @@ void OnDeinit(const int reason)
 void LoadStrategies()
 {
    g_stratCount = 0;
-   AddStrat("dc_wick_rejection",               S01_On, S01_SL, S01_RR, S01_Buy, S01_Sell);
-   AddStrat("trend_2w_m2_ema50_bounce2_vwap",   S02_On, S02_SL, S02_RR, S02_Buy, S02_Sell);
-   AddStrat("trend_2w_m2_m15bear_bounce2_vwap", S03_On, S03_SL, S03_RR, S03_Buy, S03_Sell);
-   AddStrat("dc2w_m3_h1bear_dcupper_vwap",      S04_On, S04_SL, S04_RR, S04_Buy, S04_Sell);
-   AddStrat("hammer_2w_m15_dc",                 S05_On, S05_SL, S05_RR, S05_Buy, S05_Sell);
-   AddStrat("doji_dc_upper_m15",                S06_On, S06_SL, S06_RR, S06_Buy, S06_Sell);
-   AddStrat("shstar_m5_m15",                    S07_On, S07_SL, S07_RR, S07_Buy, S07_Sell);
-   AddStrat("wick2x_dc_h1_vwap_sell",           S08_On, S08_SL, S08_RR, S08_Buy, S08_Sell);
-   AddStrat("dc_mid_hammer_2w_m15",             S09_On, S09_SL, S09_RR, S09_Buy, S09_Sell);
-   AddStrat("dc_mid_shstar_2w_m15",             S10_On, S10_SL, S10_RR, S10_Buy, S10_Sell);
-   AddStrat("dc_lowmid_hammer_2w_m15",          S11_On, S11_SL, S11_RR, S11_Buy, S11_Sell);
-   AddStrat("dc_upmid_shstar_2w_m15",           S12_On, S12_SL, S12_RR, S12_Buy, S12_Sell);
-   AddStrat("rsi2_mean_rev_full",               S13_On, S13_SL, S13_RR, S13_Buy, S13_Sell);
-   AddStrat("ema50_dc_wick_h1",                 S14_On, S14_SL, S14_RR, S14_Buy, S14_Sell);
-   AddStrat("rsi2_dc_wick",                     S15_On, S15_SL, S15_RR, S15_Buy, S15_Sell);
-   AddStrat("custom_16",                        S16_On, S16_SL, S16_RR, S16_Buy, S16_Sell);
-   AddStrat("custom_17",                        S17_On, S17_SL, S17_RR, S17_Buy, S17_Sell);
-   AddStrat("custom_18",                        S18_On, S18_SL, S18_RR, S18_Buy, S18_Sell);
-   AddStrat("custom_19",                        S19_On, S19_SL, S19_RR, S19_Buy, S19_Sell);
-   AddStrat("custom_20",                        S20_On, S20_SL, S20_RR, S20_Buy, S20_Sell);
+   AddStrat(S01_Name,  S01_On, S01_SL, S01_RR, S01_Buy, S01_Sell);
+   AddStrat(S02_Name,  S02_On, S02_SL, S02_RR, S02_Buy, S02_Sell);
+   AddStrat(S03_Name,  S03_On, S03_SL, S03_RR, S03_Buy, S03_Sell);
+   AddStrat(S04_Name,  S04_On, S04_SL, S04_RR, S04_Buy, S04_Sell);
+   AddStrat(S05_Name,  S05_On, S05_SL, S05_RR, S05_Buy, S05_Sell);
+   AddStrat(S06_Name,  S06_On, S06_SL, S06_RR, S06_Buy, S06_Sell);
+   AddStrat(S07_Name,  S07_On, S07_SL, S07_RR, S07_Buy, S07_Sell);
+   AddStrat(S08_Name,  S08_On, S08_SL, S08_RR, S08_Buy, S08_Sell);
+   AddStrat(S09_Name,  S09_On, S09_SL, S09_RR, S09_Buy, S09_Sell);
+   AddStrat(S10_Name,  S10_On, S10_SL, S10_RR, S10_Buy, S10_Sell);
+   AddStrat(S11_Name,  S11_On, S11_SL, S11_RR, S11_Buy, S11_Sell);
+   AddStrat(S12_Name,  S12_On, S12_SL, S12_RR, S12_Buy, S12_Sell);
+   AddStrat(S13_Name,  S13_On, S13_SL, S13_RR, S13_Buy, S13_Sell);
+   AddStrat(S14_Name,  S14_On, S14_SL, S14_RR, S14_Buy, S14_Sell);
+   AddStrat(S15_Name,  S15_On, S15_SL, S15_RR, S15_Buy, S15_Sell);
+   AddStrat(S16_Name,  S16_On, S16_SL, S16_RR, S16_Buy, S16_Sell);
+   AddStrat(S17_Name,  S17_On, S17_SL, S17_RR, S17_Buy, S17_Sell);
+   AddStrat(S18_Name,  S18_On, S18_SL, S18_RR, S18_Buy, S18_Sell);
+   AddStrat(S19_Name,  S19_On, S19_SL, S19_RR, S19_Buy, S19_Sell);
+   AddStrat(S20_Name,  S20_On, S20_SL, S20_RR, S20_Buy, S20_Sell);
 }
 
 void AddStrat(string name, bool on, double sl, double rr,

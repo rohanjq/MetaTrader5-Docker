@@ -297,8 +297,8 @@ log "  Tester logs symlinked → /data/logs/tester/"
 # Always sync bundled tester.ini → Config dir (for manual podman exec tests)
 if [ -f "/Metatrader/tester.ini" ]; then
     cp "/Metatrader/tester.ini" "$DATA_DIR/config/tester.ini"
-    cp "/Metatrader/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
-    log "  tester.ini synced from image → /data/config/ + Config/"
+    # Do NOT copy to MT5_CONFIG_DIR — it will be generated fresh from config.yaml
+    log "  tester.ini synced from image → /data/config/"
 fi
 # Sync bundled config.yaml if user hasn't provided one
 if [ -f "/Metatrader/config.yaml" ] && [ ! -f "$DATA_DIR/config/config.yaml" ]; then

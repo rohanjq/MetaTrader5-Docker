@@ -69,9 +69,6 @@ def generate_tester_section(cfg):
     lines.append("OptimizationCriterion=0")
     lines.append("Visual=0")
     lines.append("ShutdownTerminal=1")
-    lines.append("UseLocal=1")
-    lines.append("UseRemote=0")
-    lines.append("UseCloud=0")
     lines.append("ReplaceReport=1")
     lines.append(r"Report=reports\backtest_report")
     return lines
@@ -133,6 +130,7 @@ def generate_inputs_section(cfg):
             lines.append(emit_input(f"{slot}_On", s.get("enabled", False)))
             lines.append(emit_input(f"{slot}_SL", float(s.get("sl", 0.0))))
             lines.append(emit_input(f"{slot}_RR", float(s.get("rr", 0.0))))
+            lines.append(f"{slot}_Name={name}")
             lines.append(f"{slot}_Buy={s.get('buy', '')}")
             lines.append(f"{slot}_Sell={s.get('sell', '')}")
         else:
@@ -140,6 +138,7 @@ def generate_inputs_section(cfg):
             lines.append(emit_input(f"{slot}_On", False))
             lines.append(emit_input(f"{slot}_SL", 0.0))
             lines.append(emit_input(f"{slot}_RR", 0.0))
+            lines.append(f"{slot}_Name=")
             lines.append(f"{slot}_Buy=")
             lines.append(f"{slot}_Sell=")
 
