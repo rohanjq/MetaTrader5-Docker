@@ -310,6 +310,15 @@ if [ -e "$MT5_EXE" ]; then
     if [ "$MT5_MODE" = "tester" ]; then
         log "[7/7] === TESTER MODE ==="
 
+        # Seed desktop symbol specs so tester has SYMBOL_TRADE_MODE_FULL
+        # (broker returns CLOSEONLY during weekends; cached specs avoid this)
+        bases_dir="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/bases/PXBTTrading-1"
+        if [ -d "/Metatrader/bases/PXBTTrading-1" ]; then
+            mkdir -p "$bases_dir"
+            cp -n /Metatrader/bases/PXBTTrading-1/*.dat "$bases_dir/" 2>/dev/null || true
+            log "[7/7] Seeded symbol specs from image → bases/PXBTTrading-1/"
+        fi
+
         # Clean stale tester agent data from previous runs
         tester_dir="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/Tester"
         if [ -d "$tester_dir/Agent-127.0.0.1-3002/bases" ]; then
