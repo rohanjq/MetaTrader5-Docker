@@ -1,6 +1,6 @@
 # MetaTrader5-Docker
 
-Docker container running MetaTrader 5 via Wine + KasmVNC on Linux. Includes the MasterTrader EA and automated backtesting support.
+Docker container running MetaTrader 5 via Wine + KasmVNC on Linux, bundled with the **MasterTrader EA** — an expression-based multi-strategy trading engine.
 
 ## Quick Start
 
@@ -8,68 +8,42 @@ Docker container running MetaTrader 5 via Wine + KasmVNC on Linux. Includes the 
 cp .env.example .env
 # Edit .env: set MT5_LOGIN, MT5_PASSWORD, MT5_SERVER
 
-podman-compose up -d --build
-# Access MT5 via browser at http://<host>:3000
+# Live trading
+MT5_MODE=live podman-compose up -d --build
+
+# Backtesting
+MT5_MODE=tester podman-compose up --build
 ```
 
-## Modes
+Access MT5 via browser at `http://<host>:3000`.
 
-### Live Trading (default)
-```bash
-# .env: MT5_MODE=live
-podman-compose up -d
+## Documentation
+
+| Doc | What's in it |
+|---|---|
+| [Docker & Infrastructure](docs/docker.md) | Container architecture, volumes, symlinks, env vars, startup steps, ports |
+| [MasterTrader EA](docs/ea.md) | Signal reference, timeframes, expression syntax, strategy slots, all indicators |
+| [YAML Config](docs/yaml-config.md) | config.yaml schema, gen_inputs.py converter, live vs backtest usage |
+| [Report Parser](docs/parse_report.md) | parse_report.py usage, output fields, JSON/CSV/human formats |
+| [EA Design](DESIGN.md) | Full EA technical design document |
+
+## Repo Structure
+
 ```
-Terminal starts, authenticates, attaches the EA to a chart, and begins live trading.
-
-### Backtesting
-```bash
-# .env: MT5_MODE=tester
-podman-compose down && podman-compose build --no-cache && podman-compose up
+├── Metatrader/
+│   ├── MQL5/Experts/MasterTrader.mq5   # EA source
+│   ├── config.yaml                      # Default YAML config (bundled in image)
+│   ├── gen_inputs.py                    # YAML → tester.ini converter
+│   ├── tester.ini                       # Static fallback tester config
+│   └── start.sh                         # Container startup script
+├── tools/
+│   ├── parse_report.py                  # Backtest HTML report parser
+│   ├── account_info.py                  # Account health check via rpyc
+│   └── ticker_info.py                   # Ticker info via rpyc
+├── docs/                                # Documentation (see table above)
+├── root/                                # KasmVNC autostart/menu config
+├── Dockerfile
+├── docker-compose.yaml
+├── .env.example
+└── commands.txt                         # VPS quick-reference commands
 ```
-Terminal authenticates, runs the strategy tester with `Metatrader/tester.ini`, saves report to `/data/reports/`, then shuts down.
-
-**Note:** Backtests for forex/metals (XAUUSD etc.) must run during market hours. Brokers set `SYMBOL_TRADE_MODE_CLOSEONLY` during weekends, which causes all trades to fail with error 10044. Crypto symbols (BTCUSDT) work 24/7.
-
-## Startup Steps
-
-The container startup (`Metatrader/start.sh`) runs 7 steps:
-
-1. Install Mono (Wine .NET runtime)
-2. Install MetaTrader 5 terminal via Wine
-3. Install Python 3.9 in Wine
-4. Install Python packages (MetaTrader5, rpyc, numpy)
-5. Configure MT5 (auto-login, expert settings)
-6. Sync & compile MQL5 files (EAs, indicators)
-7. Launch MT5 terminal (live mode) or run backtest (tester mode)
-
-## EA Source
-
-The MasterTrader EA lives in `Metatrader/MQL5/Experts/MasterTrader.mq5`. See [DESIGN.md](DESIGN.md) for full documentation.
-
-After editing the EA, rebuild: `podman-compose build --no-cache && podman-compose up -d`
-
-## Environment Variables
-
-See `.env.example` for all settings. Key ones:
-
-| Variable | Description |
-|----------|-------------|
-| `MT5_LOGIN` | MT5 account number |
-| `MT5_PASSWORD` | MT5 account password |
-| `MT5_SERVER` | Broker server name |
-| `MT5_MODE` | `live` (default) or `tester` (backtest) |
-| `MT5_STARTUP_EA` | EA to auto-attach in live mode |
-| `MT5_STARTUP_SYMBOL` | Chart symbol (default: `XAUUSD`) |
-| `MT5_STARTUP_PERIOD` | Chart timeframe (default: `M1`) |
-| `MT5_RPYC_PORT` | rpyc bridge port (default: `8001`) |
-
-## Ports
-
-| Port | Service |
-|------|---------|
-| 3000 | KasmVNC web UI (browser access to MT5) |
-| 8001 | rpyc bridge (Python ↔ MT5 API) |
-
-## Useful Commands
-
-See [commands.txt](commands.txt) for VPS reference commands (log tails, mode switching, etc.).
