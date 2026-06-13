@@ -7,9 +7,98 @@ Only strategies with PF >= 1.0 (or very close with clear improvement path) are l
 
 ---
 
+## Tier 0: High PF (Worker 4 Refinement, PF >= 1.5)
+
+### Failed BB Breakout Sell (Worker 4) — HIGHEST PF EVER
+```yaml
+- name: failed_bb_sell
+  sl: 350.0
+  rr: 1.5
+  sell: "bb_M15.reenter_above==TRUE|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING"
+```
+| PF | Win% | Trades | Net Profit |
+|----|------|--------|------------|
+| 3.34 | 60% | 10 | +$1,140 |
+
+**Why it works:** BB false breakout above in a bearish trend. ADX filter is critical — removing it drops PF to 0.60. Low count but highest quality signal found.
+
+### Stoch OS Tight (Worker 4)
+```yaml
+- name: stoch_os_tight
+  sl: 350.0
+  rr: 1.5
+  buy: "stoch_M15.zone==OS|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING|candle_M3.is_bullish==TRUE"
+  sell: "stoch_M15.zone==OB|utbot_H1.bias==BEARISH|vwap_M5.price_vs==ABOVE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING|candle_M3.is_bearish==TRUE"
+```
+| PF | Win% | Trades | Net Profit |
+|----|------|--------|------------|
+| 2.69 | 50% | 6 | +$395 |
+
+### RSI2 Extreme Buy (Worker 4)
+```yaml
+- name: rsi2_extreme_buy
+  sl: 350.0
+  rr: 2.0
+  buy: "rsi2_M5.zone==EXTREME_OS|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE|candle_M3.is_bullish==TRUE"
+```
+| PF | Win% | Trades | Net Profit |
+|----|------|--------|------------|
+| 2.60 | 60% | 5 | +$581 |
+
+### DC Lowzone ADX (Worker 4)
+```yaml
+- name: dc_lowzone_adx
+  sl: 350.0
+  rr: 2.0
+  buy: "dc_M15.zone in LOWER,LOWER_MID|utbot_H1.bias==BULLISH|candle_M3.is_bullish==TRUE|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING"
+  sell: "dc_M15.zone in UPPER,UPPER_MID|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING"
+```
+| PF | Win% | Trades | Net Profit |
+|----|------|--------|------------|
+| 1.69 | 38.5% | 13 | +$305 |
+
+---
+
 ## Tier 1: Profitable (PF >= 1.2)
 
-### BB Reenter + Trend (Worker 2) — BEST OVERALL
+### VWAP Trend (Worker 4) — BEST STANDALONE ALL-ROUNDER
+```yaml
+- name: vwap_trend
+  sl: 350.0
+  rr: 1.5
+  buy: "vwap_M5.price_vs==BELOW|utbot_H1.bias==BULLISH|candle_M3.is_bullish==TRUE|ema200_M15.price_vs==ABOVE"
+  sell: "vwap_M5.price_vs==ABOVE|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE|ema200_M15.price_vs==BELOW"
+```
+| PF | Win% | Trades | Net Profit |
+|----|------|--------|------------|
+| 1.42 | 47.1% | 68 | +$1,295 |
+
+**Improvement over Worker 1:** Same concept but SL 350 instead of 400 + added EMA200 filter pushed PF from 0.99 → 1.42.
+
+### Stoch Combo Wide (Worker 4)
+```yaml
+- name: stoch_wide
+  sl: 350.0
+  rr: 1.5
+  buy: "stoch_M15.zone in OS,NEUTRAL|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING|candle_M3.is_bullish==TRUE"
+  sell: "stoch_M15.zone in OB,NEUTRAL|utbot_H1.bias==BEARISH|vwap_M5.price_vs==ABOVE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING|candle_M3.is_bearish==TRUE"
+```
+| PF | Win% | Trades | Net Profit |
+|----|------|--------|------------|
+| 1.35 | 42.9% | 28 | +$659 |
+
+### Exhausted Uptrend Sell (Worker 4)
+```yaml
+- name: exhausted_sell
+  sl: 350.0
+  rr: 2.0
+  sell: "utbot_M15.bullish_since>=8|candle_M5.type==SHOOTING_STAR|dc_M15.zone in UPPER,UPPER_MID|candle_M3.is_bearish==TRUE|ema200_M15.price_vs==BELOW"
+```
+| PF | Win% | Trades | Net Profit |
+|----|------|--------|------------|
+| 1.25 | 37.2% | 43 | +$1,884 |
+
+### BB Reenter + Trend (Worker 2)
 ```yaml
 - name: bb_reenter_vwap
   sl: 500.0
@@ -85,18 +174,18 @@ Only strategies with PF >= 1.0 (or very close with clear improvement path) are l
 
 ## Key Patterns Observed
 
-1. **RR=1.5 is the sweet spot** — Worker 2 proved this: same strategy went from -$2,137 at RR=1.0 to +$8,643 at RR=1.5.
+1. **SL=350 is the sweet spot** — Worker 4 confirmed: tighter than 400-500 used by Workers 1/2, consistently profitable.
 
-2. **More conditions = better PF** — 5-condition strategy (PF=1.22) beats 3-condition (PF=1.06). Each filter removes bad trades.
+2. **4+ conditions always beats 3** — Every PF>1.2 strategy has 4-6 conditions. Each filter removes bad trades.
 
-3. **M3 confirmation >> M1 confirmation** — M1 candles are noise. M3 gives enough time for a real move to start.
+3. **M3 confirmation >> M1 confirmation** — M1 candles are noise. M3 gives enough time for a real move to start. Worker 4 proved: switching M1→M3 for MACD cross added +0.26 PF.
 
-4. **Low frequency = high quality** — BB reenter (21 trades, PF=1.48) beats stoch (120 trades, PF=1.22). Rare signals are stronger.
+4. **ADX STRONG_TREND/TRENDING filter is the key differentiator** — Removes ranging market losses. Removing it drops PF by 2-3x.
 
-5. **SL=350 untested** — Both workers used 400-500. 350 is the sweet spot theory (if trade goes 350 against you, it's likely a loss anyway). Needs testing.
+5. **RR=1.5 default, RR=2.0 for high-conviction** — Exhausted reversals, DC lowzone, RSI2 extreme = use RR=2.0.
 
-6. **Breakeven untested** — Neither worker used breakeven. This is the biggest unexplored variable.
+6. **Breakeven hurts PF** — Worker 4 tested 175 and 250 breakeven. Both cut profitable trades early on BTC volatility. Not recommended.
 
-7. **Sell side weak** — Most profitable strategies are buy-only. Need to find good sell expressions independently.
+7. **Sell-side strategies work** — Worker 4 found 4 profitable sell-only strategies. EMA slope divergence, BB false breakout, stoch OB are the best sell setups.
 
-8. **Long-only bias in this 2-month window** — BTC may have been in an uptrend. Need to be careful not to overfit to bullish conditions. Must develop sell-side strategies for balanced portfolio.
+8. **Low frequency = high quality** — Failed BB sell (10 trades, PF=3.34) beats VWAP trend (68 trades, PF=1.42). Rare signals are stronger.

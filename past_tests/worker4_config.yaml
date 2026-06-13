@@ -1,0 +1,129 @@
+backtest:
+  symbol: BTCUSDT
+  period: M1
+  model: 1
+  from: "2026.04.13"
+  to: "2026.06.13"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 3.0
+  sl: 0
+  rr: 0
+  magic: 300
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 50
+  cooldown_sec: 60
+  reversal_cooldown: 60
+  max_consec_loss: 5
+  consec_loss_pause: 900
+  slippage: 20
+
+trailing:
+  breakeven_start: 0.0
+  trail_start: 0.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 500.0
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # REORDERED: Best PF strategies first to get priority on signals
+  # All enabled for combined backtest
+
+  # S01: VWAP Trend — PF 1.42 standalone, 1.24 combined = BEST OVERALL
+  - name: vwap_trend
+    enabled: true
+    sl: 350.0
+    rr: 1.5
+    buy: "vwap_M5.price_vs==BELOW|utbot_H1.bias==BULLISH|candle_M3.is_bullish==TRUE|ema200_M15.price_vs==ABOVE"
+    sell: "vwap_M5.price_vs==ABOVE|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE|ema200_M15.price_vs==BELOW"
+
+  # S02: Stoch Combo Wide — PF 1.35 standalone
+  - name: stoch_wide
+    enabled: true
+    sl: 350.0
+    rr: 1.5
+    buy: "stoch_M15.zone in OS,NEUTRAL|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING|candle_M3.is_bullish==TRUE"
+    sell: "stoch_M15.zone in OB,NEUTRAL|utbot_H1.bias==BEARISH|vwap_M5.price_vs==ABOVE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING|candle_M3.is_bearish==TRUE"
+
+  # S03: Stoch Wide Sell — PF 1.28 standalone
+  - name: stoch_wide_sell
+    enabled: true
+    sl: 350.0
+    rr: 1.5
+    buy: ""
+    sell: "stoch_M15.zone in OB,NEUTRAL|utbot_H1.bias==BEARISH|vwap_M5.price_vs==ABOVE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING|candle_M3.is_bearish==TRUE"
+
+  # S04: Exhausted Uptrend Sell — PF 1.25 standalone
+  - name: exhausted_sell
+    enabled: true
+    sl: 350.0
+    rr: 2.0
+    buy: ""
+    sell: "utbot_M15.bullish_since>=8|candle_M5.type==SHOOTING_STAR|dc_M15.zone in UPPER,UPPER_MID|candle_M3.is_bearish==TRUE|ema200_M15.price_vs==BELOW"
+
+  # S05: EMA Slope Sell — PF 1.23 standalone
+  - name: ema_slope_sell
+    enabled: true
+    sl: 350.0
+    rr: 1.5
+    buy: ""
+    sell: "ema50_M15.slope==FALLING|ema50_M15.price_vs==ABOVE|candle_M3.is_bearish==TRUE|utbot_H1.bias==BEARISH"
+
+  # S06: MACD Cross Trend — PF 1.20 standalone
+  - name: macd_cross_trend
+    enabled: true
+    sl: 350.0
+    rr: 1.5
+    buy: "macd_M15.cross==CROSS_UP|utbot_H1.bias==BULLISH|candle_M3.is_bullish==TRUE|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING"
+    sell: "macd_M15.cross==CROSS_DOWN|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING"
+
+  # S07: DC Lowzone ADX — PF 1.69 standalone (low trade count)
+  - name: dc_lowzone_adx
+    enabled: true
+    sl: 350.0
+    rr: 2.0
+    buy: "dc_M15.zone in LOWER,LOWER_MID|utbot_H1.bias==BULLISH|candle_M3.is_bullish==TRUE|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING"
+    sell: "dc_M15.zone in UPPER,UPPER_MID|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING"
+
+  # S08: Failed BB Breakout Sell — PF 3.34 standalone (low trade count)
+  - name: failed_bb_sell
+    enabled: true
+    sl: 350.0
+    rr: 1.5
+    buy: ""
+    sell: "bb_M15.reenter_above==TRUE|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING"
+
+  # S09: Stoch OS Tight — PF 2.69 standalone (low trade count)
+  - name: stoch_os_tight
+    enabled: true
+    sl: 350.0
+    rr: 1.5
+    buy: "stoch_M15.zone==OS|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING|candle_M3.is_bullish==TRUE"
+    sell: "stoch_M15.zone==OB|utbot_H1.bias==BEARISH|vwap_M5.price_vs==ABOVE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING|candle_M3.is_bearish==TRUE"
+
+  # S10: RSI2 Extreme Buy — PF 2.60 standalone (low trade count)
+  - name: rsi2_extreme_buy
+    enabled: true
+    sl: 350.0
+    rr: 2.0
+    buy: "rsi2_M5.zone==EXTREME_OS|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE|candle_M3.is_bullish==TRUE"
+    sell: ""
+
+  - name: unused
+    enabled: false
+    sl: 350.0
+    rr: 1.5
+    buy: ""
+    sell: ""
