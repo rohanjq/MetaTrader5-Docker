@@ -263,12 +263,13 @@ def write_csv(data, dest):
     sections = {}
 
     # Summary as key-value CSV
-    buf = io.StringIO()
-    w = csv.writer(buf)
-    w.writerow(["metric", "value"])
-    for k, v in data["summary"].items():
-        w.writerow([k, v])
-    sections["summary"] = buf.getvalue()
+    if "summary" in data:
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(["metric", "value"])
+        for k, v in data["summary"].items():
+            w.writerow([k, v])
+        sections["summary"] = buf.getvalue()
 
     # Orders
     if "orders" in data and data["orders"]:
