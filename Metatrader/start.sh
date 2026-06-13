@@ -310,18 +310,7 @@ if [ -e "$MT5_EXE" ]; then
     if [ "$MT5_MODE" = "tester" ]; then
         log "[7/7] === TESTER MODE ==="
 
-        # Build tester config: add Login+Server (no Password) + [Tester] + [TesterInputs]
-        # Password is cached in portable mode data from previous live sessions
-        {
-            echo "[Common]"
-            echo "Login=${MT5_LOGIN}"
-            echo "Server=${MT5_SERVER}"
-            echo ""
-        } > "$MT5_CONFIG_DIR/tester.ini"
-        cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
-        log "[7/7] tester.ini built with Login+Server + tester settings"
-
-        # Pre-sync: launch terminal briefly in live mode to cache credentials + symbol data
+        # Pre-sync: launch terminal in live mode to authenticate + cache credentials
         if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
             log "[7/7] Pre-syncing with trade server..."
             $WINE "$(basename "$MT5_EXE")" /portable /config:${MT5_WIN_CONFIG}\\auto_login.ini $MT5_CMD_OPTIONS &
@@ -331,6 +320,20 @@ if [ -e "$MT5_EXE" ]; then
             wait $PRESYNC_PID 2>/dev/null || true
             log "[7/7] Pre-sync complete"
         fi
+
+        # Build tester config: [Common] Login+Server (no Password — uses cached auth)
+        # Extract Login and Server from auto_login.ini
+        _login=$(grep -i "^Login=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
+        _server=$(grep -i "^Server=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
+        {
+            echo "[Common]"
+            echo "Login=${_login}"
+            echo "Server=${_server}"
+            echo "KeepPrivate=1"
+            echo ""
+        } > "$MT5_CONFIG_DIR/tester.ini"
+        cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
+        log "[7/7] tester.ini built: Login=${_login} Server=${_server}"
 
         log "[7/7] Launching MT5 Strategy Tester..."
         mt5_args="/portable /config:${MT5_WIN_CONFIG}\\tester.ini"
