@@ -285,18 +285,22 @@ if [ -e "$MT5_EXE" ]; then
 
         # Create reports directory
         mkdir -p "$DATA_DIR/reports"
+        mkdir -p "$DATA_DIR/config"
 
-        # Copy template tester.ini and allow user override from /data/config/
+        # Persist tester.ini to /data/config/ (editable, survives restarts)
+        # Priority: existing /data/config/tester.ini > bundled template
         if [ -f "$DATA_DIR/config/tester.ini" ]; then
-            log "[7/7] Using user-provided tester.ini from /data/config/"
-            cp "$DATA_DIR/config/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
+            log "[7/7] Using existing tester.ini from /data/config/"
         elif [ -f "/Metatrader/tester.ini" ]; then
-            log "[7/7] Using bundled tester.ini template"
-            cp "/Metatrader/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
+            log "[7/7] Copying bundled tester.ini → /data/config/tester.ini"
+            cp "/Metatrader/tester.ini" "$DATA_DIR/config/tester.ini"
         else
             log "[7/7] ERROR: No tester.ini found"
             exit 1
         fi
+
+        # Copy to MT5 config dir for Wine path access
+        cp "$DATA_DIR/config/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
 
         log "[7/7] Launching MT5 Strategy Tester..."
         $WINE "$(basename "$MT5_EXE")" /portable /config:"${MT5_WIN_CONFIG}\\tester.ini" $MT5_CMD_OPTIONS &

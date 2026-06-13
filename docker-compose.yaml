@@ -1,8 +1,8 @@
 services:
   mt5:
     build:
-      context: ..
-      dockerfile: MetaTrader5-Docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
       args:
         UPDATE_PACKAGES: "false"
     image: mt5-docker
