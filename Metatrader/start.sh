@@ -323,10 +323,8 @@ if [ -e "$MT5_EXE" ]; then
                 fname=$(basename "$f")
                 # Rename generic files to account-specific: symbols.dat → symbols-LOGIN.dat
                 target_name=$(echo "$fname" | sed "s/\.dat$/-${_login}.dat/")
-                if [ ! -f "$symbols_dir/$target_name" ]; then
-                    cp "$f" "$symbols_dir/$target_name"
-                    log "[7/7] Seeded $target_name → Bases/${_server}/symbols/"
-                fi
+                cp "$f" "$symbols_dir/$target_name"
+                log "[7/7] Seeded $target_name → Bases/${_server}/symbols/"
             done
         fi
 
