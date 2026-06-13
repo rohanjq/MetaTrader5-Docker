@@ -255,11 +255,14 @@ Detects price sweeping past swing high/low pivot points — areas where stop-los
 
 **Algorithm:**
 1. Copy last `INP_LiqLookback` bars of highs and lows (from bar 2 onward — bar 1 is the test bar).
-2. Scan for swing highs: `high[i] > high[i-1] AND high[i] > high[i+1]`; take highest as `upper_level`.
-3. Scan for swing lows: `low[i] < low[i-1] AND low[i] < low[i+1]`; take lowest as `lower_level`.
+2. Scan for swing highs using fractal method (STR=3): `high[i]` must be strictly higher than `high[i-j]` AND `high[i+j]` for j=1..3 (7-bar pattern). Take highest as `upper_level`.
+3. Scan for swing lows the same way: `low[i]` strictly lower than 3 bars on each side. Take lowest as `lower_level`.
 4. Check closed bar (bar 1):
    - `upper_swept`: `high[1] >= upper_level AND close[1] < upper_level`
    - `lower_swept`: `low[1] <= lower_level AND close[1] > lower_level`
+
+**Why swing strength = 3 (not 1)?**
+With strength=1 (just checking immediate neighbors), any 1-bar pullback in a trend creates a "swing high." In a strong uptrend, bar 1 constantly "sweeps" these trivial levels — giving false positives. With strength=3, a pivot must hold as a genuine reversal point for at least 3 bars on each side (7-bar pattern), and the nearest valid swing is at bar 5 — ensuring the level has real historical significance where orders actually cluster.
 
 **Difference from Donchian wick rejection:**
 DC uses the highest high / lowest low of N bars (channel boundary). Liquidity sweeps use actual *pivot points* (local highs/lows where price previously reversed), which are the exact spots where traders place stops.

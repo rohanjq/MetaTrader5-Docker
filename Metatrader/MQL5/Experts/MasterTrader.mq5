@@ -911,13 +911,19 @@ void ComputeRoundLevel(int tf_idx)
 }
 
 //--- Liquidity sweep: detect sweeps past swing high/low pivot points
+//    Uses fractal-style swing detection: a swing high must be higher than
+//    STR bars on EACH side (7-bar pattern with STR=3). This prevents false
+//    positives in trends where minor 1-bar pullbacks would create spurious swings.
+//    Nearest valid swing is at bar 2+STR (bar 5), giving it real "age" as a level.
 void ComputeLiquidity(int tf_idx)
 {
    ENUM_TIMEFRAMES tf = g_tfs[tf_idx];
    string tn = g_tfNames[tf_idx];
 
+   const int STR = 3;  // swing strength: bars required on each side of a valid pivot
+
    int total = MathMin(Bars(_Symbol, tf), INP_LiqLookback + 5);
-   if(total < 6) return;
+   if(total < 2 * STR + 5) return;  // need enough bars for meaningful swing detection
 
    double highs[], lows[];
    // Copy from bar 2 onward (bar 1 = closed bar we're testing, bars 2+ = history)
@@ -927,26 +933,31 @@ void ComputeLiquidity(int tf_idx)
 
    int cnt = ArraySize(highs);
 
-   // Find swing highs and swing lows (pivots: higher than both neighbors)
+   // Find swing highs and swing lows using fractal method (STR bars each side)
    double upperLevel = 0;
    double lowerLevel = DBL_MAX;
-   for(int i = 1; i < cnt - 1; i++)
+   for(int i = STR; i < cnt - STR; i++)
    {
-      // Swing high: bar higher than neighbors
-      if(highs[i] > highs[i-1] && highs[i] > highs[i+1])
+      // Swing high: must be strictly higher than STR bars on BOTH sides
+      bool is_sh = true;
+      for(int j = 1; j <= STR; j++)
       {
-         if(highs[i] > upperLevel) upperLevel = highs[i];
+         if(highs[i] <= highs[i-j] || highs[i] <= highs[i+j]) { is_sh = false; break; }
       }
-      // Swing low: bar lower than neighbors
-      if(lows[i] < lows[i-1] && lows[i] < lows[i+1])
+      if(is_sh && highs[i] > upperLevel) upperLevel = highs[i];
+
+      // Swing low: must be strictly lower than STR bars on BOTH sides
+      bool is_sl = true;
+      for(int j = 1; j <= STR; j++)
       {
-         if(lows[i] < lowerLevel) lowerLevel = lows[i];
+         if(lows[i] >= lows[i-j] || lows[i] >= lows[i+j]) { is_sl = false; break; }
       }
+      if(is_sl && lows[i] < lowerLevel) lowerLevel = lows[i];
    }
 
    string pfx = "liq_" + tn;
 
-   // No swing points found
+   // No significant swing points found (e.g. monotonic trend — correct: no level to sweep)
    if(upperLevel <= 0 || lowerLevel >= DBL_MAX)
    {
       SigSet(pfx + ".upper_swept", "FALSE");
