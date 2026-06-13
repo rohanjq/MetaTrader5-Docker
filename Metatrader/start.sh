@@ -310,8 +310,18 @@ if [ -e "$MT5_EXE" ]; then
     if [ "$MT5_MODE" = "tester" ]; then
         log "[7/7] === TESTER MODE ==="
 
-        # Copy to MT5 config dir for Wine path access
-        cp "$DATA_DIR/config/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
+        # Build tester config: merge [Common] from auto_login.ini + [Tester] from tester.ini
+        # This ensures tester has login credentials without hardcoding them
+        if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
+            # Extract [Common] and [Experts] from auto_login.ini, append [Tester] from tester.ini
+            awk '/^\[StartUp\]/{exit} {print}' "$MT5_CONFIG_DIR/auto_login.ini" > "$MT5_CONFIG_DIR/tester.ini"
+            echo "" >> "$MT5_CONFIG_DIR/tester.ini"
+            cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
+            log "[7/7] Merged auto_login credentials + tester settings"
+        else
+            cp "$DATA_DIR/config/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
+            log "[7/7] WARNING: No auto_login.ini found, tester may fail to authenticate"
+        fi
 
         log "[7/7] Launching MT5 Strategy Tester..."
         $WINE "$(basename "$MT5_EXE")" /portable /config:"${MT5_WIN_CONFIG}\\tester.ini" $MT5_CMD_OPTIONS &
