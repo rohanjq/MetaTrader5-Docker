@@ -18,6 +18,27 @@ podman exec mt5 tail -f "/data/wine/drive_c/Program Files/PXBT Trading MT5 Termi
 # === REPORTS ===
 ls -la data/reports/
 
+# === FIND SYMBOLS.RAW ON DESKTOP (run on Windows) ===
+# Option 1: Portable mode (if MT5 is in Program Files)
+dir /s /b "C:\Program Files\PXBT Trading MT5 Terminal\bases\symbols.raw"
+# Option 2: AppData (standard mode)
+dir /s /b "%APPDATA%\MetaQuotes\Terminal\*symbols.raw"
+# Option 3: Search all of C drive
+dir /s /b C:\symbols.raw
+
+# === FIND SYMBOLS FILES ON VPS ===
+find "data/wine/drive_c/Program Files/PXBT Trading MT5 Terminal/" -name "symbols*" -o -name "*.raw" 2>/dev/null
+find "data/wine/drive_c/Program Files/PXBT Trading MT5 Terminal/bases" -type f 2>/dev/null
+
+# === COPY SYMBOLS.RAW FROM DESKTOP TO VPS ===
+# 1. On desktop, copy symbols.raw to a temp location:
+#    copy "C:\...\bases\PXBTTrading-1\symbols.raw" C:\temp\symbols.raw
+# 2. SCP to VPS:
+#    scp C:\temp\symbols.raw root@coffee:~/MetaTrader5-Docker/Metatrader/bases/PXBTTrading-1/symbols.raw
+# 3. On VPS, seed it into container:
+#    mkdir -p "data/wine/drive_c/Program Files/PXBT Trading MT5 Terminal/bases/PXBTTrading-1/"
+#    cp Metatrader/bases/PXBTTrading-1/symbols.raw "data/wine/drive_c/Program Files/PXBT Trading MT5 Terminal/bases/PXBTTrading-1/"
+
 # === EA EXPERT LOG ===
 ls -la data/logs/experts/
 
