@@ -30,7 +30,7 @@ COPY Metatrader /Metatrader
 RUN chmod +x /Metatrader/start.sh
 
 # KasmVNC defaults (autostart, right-click menu)
-COPY MetaTrader5-Docker/root /
+COPY root /
 
 EXPOSE 3000 8001
 VOLUME /config /data
