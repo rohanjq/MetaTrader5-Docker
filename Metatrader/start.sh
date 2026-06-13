@@ -66,7 +66,8 @@ download_if_missing() {
 # ============================================================
 log "Creating data directories..."
 mkdir -p "$DOWNLOADS_DIR" "$EXPERTS_DIR" "$INDICATORS_DIR" \
-         "$SCRIPTS_DIR" "$SIGNALS_DIR" "$LOGS_DIR"
+         "$SCRIPTS_DIR" "$SIGNALS_DIR" "$LOGS_DIR" \
+         "$DATA_DIR/reports" "$DATA_DIR/config"
 
 # ============================================================
 # [1/7] Mono
@@ -287,6 +288,19 @@ log "  EA logs symlinked → /data/logs/experts/"
 ln -sfnr "$MT5_TERMINAL_LOGS" "$LOGS_DIR/terminal"
 log "  Terminal logs symlinked → /data/logs/terminal/"
 
+# Symlink tester logs
+MT5_TESTER_DIR="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/Tester"
+mkdir -p "$MT5_TESTER_DIR/logs"
+ln -sfnr "$MT5_TESTER_DIR" "$LOGS_DIR/tester"
+log "  Tester logs symlinked → /data/logs/tester/"
+
+# Always sync bundled tester.ini → Config dir (for manual podman exec tests)
+if [ -f "/Metatrader/tester.ini" ]; then
+    cp "/Metatrader/tester.ini" "$DATA_DIR/config/tester.ini"
+    cp "/Metatrader/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
+    log "  tester.ini synced from image → /data/config/ + Config/"
+fi
+
 # ============================================================
 # [7/7] Launch MT5 terminal + rpyc server
 # ============================================================
@@ -295,22 +309,6 @@ if [ -e "$MT5_EXE" ]; then
 
     if [ "$MT5_MODE" = "tester" ]; then
         log "[7/7] === TESTER MODE ==="
-
-        # Create reports directory
-        mkdir -p "$DATA_DIR/reports"
-        mkdir -p "$DATA_DIR/config"
-
-        # Persist tester.ini to /data/config/ (editable, survives restarts)
-        # Priority: existing /data/config/tester.ini > bundled template
-        if [ -f "$DATA_DIR/config/tester.ini" ]; then
-            log "[7/7] Using existing tester.ini from /data/config/"
-        elif [ -f "/Metatrader/tester.ini" ]; then
-            log "[7/7] Copying bundled tester.ini → /data/config/tester.ini"
-            cp "/Metatrader/tester.ini" "$DATA_DIR/config/tester.ini"
-        else
-            log "[7/7] ERROR: No tester.ini found"
-            exit 1
-        fi
 
         # Copy to MT5 config dir for Wine path access
         cp "$DATA_DIR/config/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
