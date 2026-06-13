@@ -332,6 +332,9 @@ if [ -e "$MT5_EXE" ]; then
         # This is a broker limitation, not a Wine/config issue.
         # Only run backtests during market hours (Sun 5pm - Fri 5pm ET).
 
+        # Ensure reports dir exists inside MT5 install (Report path is relative)
+        mkdir -p "$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/reports"
+
         log "[7/7] Launching MT5 with tester config..."
         mt5_args="/portable /config:${MT5_WIN_CONFIG}\\tester.ini"
         $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
@@ -340,12 +343,14 @@ if [ -e "$MT5_EXE" ]; then
         log "[7/7] Waiting for backtest to complete (PID $MT5_PID)..."
         wait $MT5_PID 2>/dev/null || true
 
-        # Check for report
-        if ls "$DATA_DIR/reports"/backtest_report* 1>/dev/null 2>&1; then
-            log "[7/7] Backtest report saved to /data/reports/"
+        # Copy report from MT5 install dir to /data/reports/
+        mt5_reports="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/reports"
+        if ls "$mt5_reports"/backtest_report* 1>/dev/null 2>&1; then
+            cp "$mt5_reports"/backtest_report* "$DATA_DIR/reports/"
+            log "[7/7] Backtest report copied to /data/reports/"
             ls -la "$DATA_DIR/reports"/backtest_report*
         else
-            log "[7/7] WARNING: No report file found in /data/reports/"
+            log "[7/7] WARNING: No report file found"
         fi
 
         log "[7/7] Tester run complete."
