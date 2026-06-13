@@ -310,9 +310,16 @@ if [ -e "$MT5_EXE" ]; then
     if [ "$MT5_MODE" = "tester" ]; then
         log "[7/7] === TESTER MODE ==="
 
-        # Copy tester.ini as-is (no [Common] merge — use cached portable credentials)
-        cp "$DATA_DIR/config/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
-        log "[7/7] tester.ini copied to Config dir"
+        # Build tester config: add Login+Server (no Password) + [Tester] + [TesterInputs]
+        # Password is cached in portable mode data from previous live sessions
+        {
+            echo "[Common]"
+            echo "Login=${MT5_LOGIN}"
+            echo "Server=${MT5_SERVER}"
+            echo ""
+        } > "$MT5_CONFIG_DIR/tester.ini"
+        cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
+        log "[7/7] tester.ini built with Login+Server + tester settings"
 
         # Pre-sync: launch terminal briefly in live mode to cache credentials + symbol data
         if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
