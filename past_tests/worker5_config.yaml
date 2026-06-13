@@ -1,0 +1,57 @@
+backtest:
+  symbol: BTCUSDT
+  period: M1
+  model: 1
+  from: "2026.04.13"
+  to: "2026.06.13"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 3.0
+  sl: 0
+  rr: 0
+  magic: 300
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 50
+  cooldown_sec: 60
+  reversal_cooldown: 60
+  max_consec_loss: 5
+  consec_loss_pause: 900
+  slippage: 20
+
+trailing:
+  breakeven_start: 0.0
+  trail_start: 0.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 500.0
+  liq_lookback: 20
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # BEST: Sweep + Stoch OS/OB — PF=2.00, 28 trades, +$4,769
+  # Liquidity sweep reversal with stochastic exhaustion confirmation
+  # Sell side WR: 64%, Buy side WR: 41%
+  - name: liq_sweep_stoch
+    enabled: true
+    sl: 350.0
+    rr: 2.0
+    buy: "liq_M15.lower_swept==TRUE|stoch_M15.zone==OS|candle_M3.is_bullish==TRUE|ema200_M15.price_vs==ABOVE"
+    sell: "liq_M15.upper_swept==TRUE|stoch_M15.zone==OB|candle_M3.is_bearish==TRUE|ema200_M15.price_vs==BELOW"
+
+  - name: unused
+    enabled: false
+    sl: 350.0
+    rr: 1.5
+    buy: ""
+    sell: ""
