@@ -1,0 +1,158 @@
+# ============================================================
+# MasterTrader EA — FINAL Strategy Configuration
+# Strategy Research: 10 trap-catching strategies for BTCUSDT
+# Backtest window: 2026.04.13 to 2026.06.13
+#
+# Top performing strategies (all included for combined test):
+#
+# S01: DC Wick Trap — DC wick rejection + H1 bias + M3 confirmation
+#      PF=1.06  WR=42.4%  Trades=92  MaxDD=24.0%
+#      Trap: Price probes channel edge, gets violently rejected
+#
+# S02: VWAP Trend — VWAP + H1 bias + M3 candle
+#      PF=0.99  WR=40.5%  Trades=252  MaxDD=42.0%
+#      Trap: Price below VWAP in uptrend = liquidity grab before continuation
+#
+# S03: MACD Cross Trap — MACD cross + H1 bias + M1 confirmation
+#      PF=0.94  WR=39.4%  Trades=170  MaxDD=34.4%
+#      Trap: MACD cross in strong H1 trend direction catches pullback traps
+#
+# S04: RSI2 Snap — RSI2 extreme + H1 bias + M1 confirmation
+#      PF=0.91  WR=38.7%  Trades=274  MaxDD=56.9%
+#      Trap: Extreme RSI2 is exhaustion/fear — price snaps back
+# ============================================================
+
+backtest:
+  symbol: BTCUSDT
+  period: M1
+  model: 1
+  from: "2026.04.13"
+  to: "2026.06.13"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 3.0
+  sl: 0
+  rr: 0
+  magic: 300
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 50
+  cooldown_sec: 60
+  reversal_cooldown: 60
+  max_consec_loss: 5
+  consec_loss_pause: 900
+  slippage: 20
+
+trailing:
+  breakeven_start: 0.0
+  trail_start: 0.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # S01: DC Wick Trap — BEST PERFORMER: PF=1.06, WR=42.4%, 92 trades, DD=24.0%
+  # Trap: Price probes DC edge, gets violently rejected (wick), then reverses.
+  # H1 trend gives context, M3 bullish candle confirms reversal has started.
+  - name: dc_wick_trap
+    enabled: true
+    sl: 400.0
+    rr: 1.5
+    buy: "dc_M15.lower_wick_rej==TRUE|utbot_H1.bias==BULLISH|candle_M3.is_bullish==TRUE"
+    sell: "dc_M15.upper_wick_rej==TRUE|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE"
+
+  # S02: VWAP Trend — PF=0.99, WR=40.5%, 252 trades, DD=42.0%
+  # Trap: Price below VWAP in uptrend = discount entry (liquidity grab at
+  # institutional level). Above VWAP in downtrend = premium short.
+  - name: vwap_trend
+    enabled: true
+    sl: 400.0
+    rr: 1.5
+    buy: "vwap_M5.price_vs==BELOW|utbot_H1.bias==BULLISH|candle_M3.is_bullish==TRUE"
+    sell: "vwap_M5.price_vs==ABOVE|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE"
+
+  # S03: MACD Cross Trap — PF=0.94, WR=39.4%, 170 trades, DD=34.4%
+  # Trap: MACD CROSS_UP in H1 bullish trend = counter-trend traders trapped
+  # by false breakdown, trend resumes.
+  - name: macd_cross_trap
+    enabled: true
+    sl: 400.0
+    rr: 1.5
+    buy: "macd_M15.cross==CROSS_UP|utbot_H1.bias==BULLISH|candle_M1.is_bullish==TRUE"
+    sell: "macd_M15.cross==CROSS_DOWN|utbot_H1.bias==BEARISH|candle_M1.is_bearish==TRUE"
+
+  # S04: RSI2 Extreme Snap — PF=0.91, WR=38.7%, 274 trades, DD=56.9%
+  # Trap: RSI2 at extreme <5 (or >95) means pure exhaustion. The snap-back
+  # move is violent. H1 alignment prevents fading a strong trend.
+  - name: rsi2_snap
+    enabled: true
+    sl: 400.0
+    rr: 1.5
+    buy: "rsi2_M5.zone==EXTREME_OS|utbot_H1.bias==BULLISH|candle_M1.is_bullish==TRUE"
+    sell: "rsi2_M5.zone==EXTREME_OB|utbot_H1.bias==BEARISH|candle_M1.is_bearish==TRUE"
+
+  # S05: H1 Flip Trap — PF=0.74, WR=32.5%, 83 trades, DD=50.9%
+  # Kept for diversity — catches H1 trend change signals
+  - name: h1_flip_trap
+    enabled: true
+    sl: 500.0
+    rr: 1.5
+    buy: "utbot_H1.signal==BUY|candle_M1.is_bullish==TRUE"
+    sell: "utbot_H1.signal==SELL|candle_M1.is_bearish==TRUE"
+
+  # S06: Stochastic Continuation — PF=0.92, WR=38.7%, 186 trades, DD=40.6%
+  # Trap: Extreme stochastic in trend context = pause, not reversal
+  - name: stoch_cont
+    enabled: true
+    sl: 500.0
+    rr: 1.5
+    buy: "stoch_M15.zone==OS|utbot_H1.bias==BULLISH|candle_M1.is_bullish==TRUE"
+    sell: "stoch_M15.zone==OB|utbot_H1.bias==BEARISH|candle_M1.is_bearish==TRUE"
+
+  # S07: ADX Strong Trend — PF=0.92, WR=38.2%, 212 trades, DD=50.9%
+  # Trap: Strong trends create pullbacks that trap counter-trend traders.
+  # M5 marubozu in trend direction catches the resumption.
+  - name: adx_strong
+    enabled: true
+    sl: 500.0
+    rr: 1.5
+    buy: "adx_M15.strength in STRONG_TREND,TRENDING|adx_M15.di_bias==BULLISH|candle_M5.is_bullish==TRUE|candle_M5.type==MARUBOZU"
+    sell: "adx_M15.strength in STRONG_TREND,TRENDING|adx_M15.di_bias==BEARISH|candle_M5.is_bearish==TRUE|candle_M5.type==MARUBOZU"
+
+  # S08: EMA50 Bounce — PF=0.92, WR=32.1%, 137 trades, DD=56.5%
+  # Trap: Price revisits EMA50, looks like support break, but is a
+  # liquidity grab before continuation. Marubozu confirms momentum.
+  - name: ema50_bounce
+    enabled: true
+    sl: 400.0
+    rr: 2.0
+    buy: "ema50_M15.price_vs==BELOW|utbot_H1.bias==BULLISH|candle_M3.is_bullish==TRUE|candle_M3.type==MARUBOZU"
+    sell: "ema50_M15.price_vs==ABOVE|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE|candle_M3.type==MARUBOZU"
+
+  # S09: BB Squeeze Break — PF=0.78, WR=28.6%, 21 trades, DD=19.8%
+  # Trap: Tight BB bands + trend = impending breakout in trend direction
+  - name: bb_squeeze_brk
+    enabled: true
+    sl: 400.0
+    rr: 2.0
+    buy: "bb_M15.squeeze==TRUE|utbot_H1.bias==BULLISH|candle_M3.is_bullish==TRUE|candle_M3.type==MARUBOZU"
+    sell: "bb_M15.squeeze==TRUE|utbot_H1.bias==BEARISH|candle_M3.is_bearish==TRUE|candle_M3.type==MARUBOZU"
+
+  # S10: M5 Signal Trap — PF=0.74, WR=33.8%, 240 trades, DD=73.3%
+  # Kept for diversity — catches M5 trend change signals
+  - name: m5_signal_trap
+    enabled: true
+    sl: 400.0
+    rr: 1.5
+    buy: "utbot_M5.signal==BUY|utbot_H1.bias==BULLISH|candle_M1.is_bullish==TRUE"
+    sell: "utbot_M5.signal==SELL|utbot_H1.bias==BEARISH|candle_M1.is_bearish==TRUE"
