@@ -10,7 +10,7 @@ ENV WINEDEBUG=-all
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         python3 python3-pip python3-venv \
-        python3-xdg \
+        python3-xdg python3-yaml \
         wget curl gnupg2 software-properties-common ca-certificates \
     && mkdir -pm755 /etc/apt/keyrings \
     && wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \

@@ -1,0 +1,156 @@
+# ============================================================
+# MasterTrader EA Configuration
+# Used for both live trading and backtesting
+# ============================================================
+
+# --- Backtest settings (ignored in live mode) ---
+backtest:
+  symbol: BTCUSDT
+  period: M1
+  model: 1              # 0=Every tick, 1=1min OHLC, 2=Open price, 4=Real ticks
+  from: "2026.06.08"
+  to: "2026.06.13"
+  deposit: 10000
+  leverage: "1:100"
+
+# --- Global EA parameters ---
+global:
+  risk_pct: 7.5
+  sl: 350.0             # Default SL (dollars) if strategy SL=0
+  rr: 1.2               # Default reward:risk if strategy RR=0
+  magic: 300
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 150
+  cooldown_sec: 750
+  reversal_cooldown: 750
+  max_consec_loss: 3
+  consec_loss_pause: 1800
+  slippage: 20
+
+# --- Trailing stop ---
+trailing:
+  breakeven_start: 0.0  # Move SL to entry after $X profit (0=off)
+  trail_start: 0.0      # Start trailing after $X profit (0=off)
+  trail_step: 2.0       # Trail distance (dollars)
+
+# --- Indicator parameters ---
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+
+# --- External control (live mode only) ---
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+# --- Strategies (mapped to S01-S20 slots in order) ---
+# Each strategy has: enabled, sl, rr, buy, sell
+# Leave buy/sell empty ("") for one-directional strategies
+strategies:
+  - name: dc_wick_rejection
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: "dc_M15.lower_wick_rej==TRUE|utbot_M3.bias==BULLISH"
+    sell: "dc_M15.upper_wick_rej==TRUE|utbot_M3.bias==BEARISH"
+
+  - name: trend_2w_m2_ema50_bounce2_vwap
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: ""
+    sell: "utbot_M2.signal==SELL|ema50_M5.price_vs==BELOW|utbot_M5.bullish_since>=2|vwap_M1.price_vs==BELOW"
+
+  - name: trend_2w_m2_m15bear_bounce2_vwap
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: ""
+    sell: "utbot_M2.signal==SELL|utbot_M15.bias==BEARISH|utbot_M5.bullish_since>=2|vwap_M1.price_vs==BELOW"
+
+  - name: dc2w_m3_h1bear_dcupper_vwap
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: ""
+    sell: "utbot_M3.signal==SELL|utbot_H1.bias==BEARISH|dc_M15.zone in UPPER,UPPER_MID|vwap_M1.price_vs==BELOW"
+
+  - name: hammer_2w_m15_dc
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: "candle_M3.type==HAMMER|utbot_M5.bearish_since>=2|utbot_M15.bias==BULLISH|dc_M15.zone in LOWER,LOWER_MID"
+    sell: ""
+
+  - name: doji_dc_upper_m15
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: ""
+    sell: "candle_M3.type==DOJI|dc_M15.zone in UPPER,UPPER_MID|utbot_M15.bias==BEARISH"
+
+  - name: shstar_m5_m15
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: ""
+    sell: "candle_M5.type==SHOOTING_STAR|utbot_M15.bias==BEARISH"
+
+  - name: wick2x_dc_h1_vwap_sell
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: ""
+    sell: "candle_M3.upper_wick_ratio>=2|candle_M3.is_bearish==TRUE|dc_M15.zone in UPPER,UPPER_MID|utbot_H1.bias==BEARISH|vwap_M1.price_vs==BELOW"
+
+  - name: dc_mid_hammer_2w_m15
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: "dc_M5.zone==MIDDLE|utbot_M5.bearish_since>=2|candle_M3.type==HAMMER|utbot_M15.bias==BULLISH"
+    sell: ""
+
+  - name: dc_mid_shstar_2w_m15
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: ""
+    sell: "dc_M5.zone==MIDDLE|utbot_M5.bullish_since>=2|candle_M3.type==SHOOTING_STAR|utbot_M15.bias==BEARISH"
+
+  - name: dc_lowmid_hammer_2w_m15
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: "dc_M5.zone in LOWER_MID,MIDDLE|utbot_M5.bearish_since>=2|candle_M3.type==HAMMER|utbot_M15.bias==BULLISH"
+    sell: ""
+
+  - name: dc_upmid_shstar_2w_m15
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: ""
+    sell: "dc_M5.zone in UPPER_MID,MIDDLE|utbot_M5.bullish_since>=2|candle_M3.type==SHOOTING_STAR|utbot_M15.bias==BEARISH"
+
+  - name: rsi2_mean_rev_full
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: "rsi2_M5.zone==EXTREME_OS|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING|utbot_H1.bias==BULLISH"
+    sell: ""
+
+  - name: ema50_dc_wick_h1
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: "ema50_M15.slope==RISING|dc_M15.lower_wick_rej==TRUE|utbot_H1.bias==BULLISH"
+    sell: ""
+
+  - name: rsi2_dc_wick
+    enabled: true
+    sl: 350.0
+    rr: 1.2
+    buy: "rsi2_M5.zone==EXTREME_OS|ema200_M15.price_vs==ABOVE|dc_M15.lower_wick_rej==TRUE"
+    sell: ""

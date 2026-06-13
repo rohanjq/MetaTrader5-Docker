@@ -300,6 +300,11 @@ if [ -f "/Metatrader/tester.ini" ]; then
     cp "/Metatrader/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
     log "  tester.ini synced from image → /data/config/ + Config/"
 fi
+# Sync bundled config.yaml if user hasn't provided one
+if [ -f "/Metatrader/config.yaml" ] && [ ! -f "$DATA_DIR/config/config.yaml" ]; then
+    cp "/Metatrader/config.yaml" "$DATA_DIR/config/config.yaml"
+    log "  config.yaml synced from image → /data/config/"
+fi
 
 # ============================================================
 # [7/7] Launch MT5 terminal + rpyc server
@@ -324,7 +329,16 @@ if [ -e "$MT5_EXE" ]; then
             echo "KeepPrivate=1"
             echo ""
         } > "$MT5_CONFIG_DIR/tester.ini"
-        cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
+
+        # Generate tester config from YAML if available, otherwise use static .ini
+        if [ -f "$DATA_DIR/config/config.yaml" ]; then
+            log "[7/7] Generating tester config from config.yaml..."
+            python3 /Metatrader/gen_inputs.py "$DATA_DIR/config/config.yaml" >> "$MT5_CONFIG_DIR/tester.ini"
+        elif [ -f "$DATA_DIR/config/tester.ini" ]; then
+            cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
+        else
+            log "[7/7] WARNING: No config.yaml or tester.ini found in /data/config/"
+        fi
         log "[7/7] tester.ini built: Login=${_login} Server=${_server}"
 
         # NOTE: Backtests will fail with 10044 during weekends/market-closed
