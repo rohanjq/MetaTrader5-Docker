@@ -310,17 +310,19 @@ if [ -e "$MT5_EXE" ]; then
     if [ "$MT5_MODE" = "tester" ]; then
         log "[7/7] === TESTER MODE ==="
 
-        # Build tester config: merge [Common] from auto_login.ini + [Tester] from tester.ini
-        # This ensures tester has login credentials without hardcoding them
+        # Copy tester.ini as-is (no [Common] merge — use cached portable credentials)
+        cp "$DATA_DIR/config/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
+        log "[7/7] tester.ini copied to Config dir"
+
+        # Pre-sync: launch terminal briefly in live mode to cache credentials + symbol data
         if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
-            # Extract [Common] and [Experts] from auto_login.ini, append [Tester] from tester.ini
-            awk '/^\[StartUp\]/{exit} {print}' "$MT5_CONFIG_DIR/auto_login.ini" > "$MT5_CONFIG_DIR/tester.ini"
-            echo "" >> "$MT5_CONFIG_DIR/tester.ini"
-            cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
-            log "[7/7] Merged auto_login credentials + tester settings"
-        else
-            cp "$DATA_DIR/config/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
-            log "[7/7] WARNING: No auto_login.ini found, tester may fail to authenticate"
+            log "[7/7] Pre-syncing with trade server..."
+            $WINE "$(basename "$MT5_EXE")" /portable /config:${MT5_WIN_CONFIG}\\auto_login.ini $MT5_CMD_OPTIONS &
+            PRESYNC_PID=$!
+            sleep 30
+            kill $PRESYNC_PID 2>/dev/null || true
+            wait $PRESYNC_PID 2>/dev/null || true
+            log "[7/7] Pre-sync complete"
         fi
 
         log "[7/7] Launching MT5 Strategy Tester..."
