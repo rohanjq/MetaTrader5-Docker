@@ -324,7 +324,8 @@ if [ -e "$MT5_EXE" ]; then
         fi
 
         log "[7/7] Launching MT5 Strategy Tester..."
-        $WINE "$(basename "$MT5_EXE")" /portable "/config:${MT5_WIN_CONFIG}\\tester.ini" $MT5_CMD_OPTIONS &
+        mt5_args="/portable /config:${MT5_WIN_CONFIG}\\tester.ini"
+        $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
         MT5_PID=$!
 
         # Wait for tester to finish (ShutdownTerminal=1 in ini)
