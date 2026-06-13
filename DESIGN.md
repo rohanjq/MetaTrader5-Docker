@@ -4,7 +4,7 @@
 
 **MasterTrader.mq5** is a single-file MQL5 Expert Advisor (~1255 lines) that implements an expression-based multi-strategy trading system for MetaTrader 5. It was designed to replace a previous Python-based system (`mt5-trader`) that used CSV signal passing, by computing all indicators natively inside the EA.
 
-**Target instrument:** XAUUSD (gold), though it works on any symbol.  
+**Target instrument:** Symbol-agnostic — works on any instrument. EA input defaults are tuned for XAUUSD (gold), while the bundled `config.yaml` is tuned for BTCUSDT (crypto). Adjust SL/RR values per instrument in your `data/config/config.yaml`.  
 **Broker:** PXBT Trading MT5 Terminal (demo).  
 **Version:** 2.1
 

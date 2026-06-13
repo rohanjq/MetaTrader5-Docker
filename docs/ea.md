@@ -312,7 +312,7 @@ Each condition: `signal_key OPERATOR value`
 | `in` | `dc_M15.zone in UPPER,UPPER_MID` | Value is one of (comma-separated) |
 | `not_in` | `dc_M15.zone not_in LOWER` | Value is not one of |
 
-**Important:** `in` and `not_in` require spaces around them: `key in val1,val2` not `key in val1, val2`.
+**Important:** `in` and `not_in` require spaces around them: `key in val1,val2`. Spaces after commas in the value list are allowed (e.g. `key in val1, val2` works — values are trimmed).
 
 ### Strategy Slots
 

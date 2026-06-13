@@ -259,6 +259,7 @@ datetime       g_lastBarTime[NUM_TF];
 
 Strategy       g_strats[MAX_STRAT];
 int            g_stratCount = 0;
+bool           g_needLiveCandle = false;
 
 // Indicator handles per timeframe
 int g_h_utbot_atr[NUM_TF];
@@ -310,6 +311,15 @@ int OnInit()
 
    LoadStrategies();
    EventSetTimer(1);
+
+   // Auto-detect if any strategy uses live candle signals
+   g_needLiveCandle = false;
+   for(int i = 0; i < g_stratCount; i++)
+   {
+      if(StringFind(g_strats[i].buyCond, "live_") >= 0 ||
+         StringFind(g_strats[i].sellCond, "live_") >= 0)
+      { g_needLiveCandle = true; break; }
+   }
 
    int enabled = 0;
    for(int i = 0; i < g_stratCount; i++)
@@ -443,11 +453,14 @@ void OnTick()
       }
    }
 
-   // 3. Running candle — every tick, all sub-daily TFs
-   for(int i = 0; i < NUM_TF; i++)
+   // 3. Running candle — every tick, only if strategies use live_* signals
+   if(g_needLiveCandle)
    {
-      if(g_tfs[i] >= PERIOD_D1) continue;
-      ComputeCandleForBar(i, 0, "live_");
+      for(int i = 0; i < NUM_TF; i++)
+      {
+         if(g_tfs[i] >= PERIOD_D1) continue;
+         ComputeCandleForBar(i, 0, "live_");
+      }
    }
 
    // 4. Daily counter reset
@@ -515,9 +528,14 @@ void OnTrade()
                     + HistoryDealGetDouble(ticket, DEAL_COMMISSION);
       string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
 
+      // Extract strategy name from comment "MT|strategy_name" for exact matching
+      string matchName = "";
+      if(StringFind(comment, "MT|") == 0)
+         matchName = StringSubstr(comment, 3);
+
       for(int s = 0; s < g_stratCount; s++)
       {
-         if(StringFind(comment, g_strats[s].name) >= 0)
+         if(matchName != "" && matchName == g_strats[s].name)
          {
             g_strats[s].totalTrades++;
             g_strats[s].pnl += profit;
@@ -856,7 +874,13 @@ void ComputeVWAP(int tf_idx)
    MqlRates rates[];
    ArraySetAsSeries(rates, false);
    int copied = CopyRates(_Symbol, tf, sessionStart, TimeCurrent(), rates);
-   if(copied < 2) return;
+   if(copied < 2)
+   {
+      string pfx2 = "vwap_" + tn;
+      SigSet(pfx2 + ".price_vs", "");
+      SigSet(pfx2 + ".value", "0");
+      return;
+   }
 
    double cumTPV = 0, cumVol = 0;
    for(int i = 0; i <= copied - 2; i++)
@@ -891,7 +915,18 @@ void ComputeCandleForBar(int tf_idx, int barIdx, string prefix)
    double l = iLow(_Symbol, tf, barIdx);
    double c = iClose(_Symbol, tf, barIdx);
 
-   if(o == 0 && h == 0 && l == 0 && c == 0) return;
+   if(o == 0 && h == 0 && l == 0 && c == 0)
+   {
+      string pfx2 = "candle_" + tn + "." + prefix;
+      SigSet(pfx2 + "type", "");
+      SigSet(pfx2 + "dir", "");
+      SigSet(pfx2 + "is_bullish", "");
+      SigSet(pfx2 + "is_bearish", "");
+      SigSet(pfx2 + "upper_wick_ratio", "0");
+      SigSet(pfx2 + "lower_wick_ratio", "0");
+      SigSet(pfx2 + "body_pct", "0");
+      return;
+   }
 
    double body_top    = MathMax(o, c);
    double body_bottom = MathMin(o, c);

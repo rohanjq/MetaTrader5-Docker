@@ -13,7 +13,7 @@ You are an autonomous trading strategy researcher. Your job is to develop **at l
 - You are on a Linux/macOS machine with `podman-compose` available.
 - A remote MT5 instance runs inside a Docker container (`mt5` service).
 - The working directory is the repo root: the folder containing this file.
-- Backtest period: **2026.06.08 – 2026.06.13** (5 days of BTCUSDT data).
+- Backtest period: **2026.04.08 – 2026.06.13** (5 days of BTCUSDT data).
 - The EA is already compiled and installed inside the container.
 
 ---
