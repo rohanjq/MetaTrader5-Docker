@@ -310,24 +310,23 @@ if [ -e "$MT5_EXE" ]; then
     if [ "$MT5_MODE" = "tester" ]; then
         log "[7/7] === TESTER MODE ==="
 
-        # Pre-sync: launch terminal in live mode to authenticate + cache credentials
-        if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
-            log "[7/7] Pre-syncing with trade server..."
-            $WINE "$(basename "$MT5_EXE")" /portable /config:${MT5_WIN_CONFIG}\\auto_login.ini $MT5_CMD_OPTIONS &
-            PRESYNC_PID=$!
-            sleep 30
-            kill $PRESYNC_PID 2>/dev/null || true
-            wait $PRESYNC_PID 2>/dev/null || true
-            log "[7/7] Pre-sync complete"
+        # Clean stale tester agent data from previous runs
+        local tester_dir="$MT5_DIR/Tester"
+        if [ -d "$tester_dir/Agent-127.0.0.1-3002/bases" ]; then
+            rm -rf "$tester_dir/Agent-127.0.0.1-3002/bases"
+            log "[7/7] Cleared stale agent bases cache"
         fi
 
-        # Build tester config: [Common] Login+Server (no Password — uses cached auth)
-        # Extract Login and Server from auto_login.ini
+        # Build single config: [Common] (auth) + [Tester] (testing)
+        # Terminal authenticates, syncs, then auto-starts tester in same session
+        # (matches desktop behavior where tester runs inside running terminal)
         _login=$(grep -i "^Login=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
+        _password=$(grep -i "^Password=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
         _server=$(grep -i "^Server=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
         {
             echo "[Common]"
             echo "Login=${_login}"
+            echo "Password=${_password}"
             echo "Server=${_server}"
             echo "KeepPrivate=1"
             echo ""
@@ -335,7 +334,7 @@ if [ -e "$MT5_EXE" ]; then
         cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
         log "[7/7] tester.ini built: Login=${_login} Server=${_server}"
 
-        log "[7/7] Launching MT5 Strategy Tester..."
+        log "[7/7] Launching MT5 with tester config (single session)..."
         mt5_args="/portable /config:${MT5_WIN_CONFIG}\\tester.ini"
         $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
         MT5_PID=$!
