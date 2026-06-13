@@ -311,7 +311,7 @@ if [ -e "$MT5_EXE" ]; then
         log "[7/7] === TESTER MODE ==="
 
         # Clean stale tester agent data from previous runs
-        local tester_dir="$MT5_DIR/Tester"
+        local tester_dir="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/Tester"
         if [ -d "$tester_dir/Agent-127.0.0.1-3002/bases" ]; then
             rm -rf "$tester_dir/Agent-127.0.0.1-3002/bases"
             log "[7/7] Cleared stale agent bases cache"
