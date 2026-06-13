@@ -266,6 +266,28 @@ round_M1.dist_above<=100           # Within $100 of the next round level above
 round_M5.pct<=30                   # Price near the bottom of the round range
 ```
 
+### Liquidity Sweep
+
+**Prefix:** `liq_TF`
+
+Detects price sweeping past recent swing high/low pivot points — areas where resting orders (stop-losses) cluster. A sweep occurs when the wick pierces beyond the level but the close retreats back inside, indicating a "stop hunt" reversal.
+
+| Key | Values | Description |
+|---|---|---|
+| `.upper_swept` | `TRUE`, `FALSE` | Closed bar wick went above the highest swing high but close came back below |
+| `.lower_swept` | `TRUE`, `FALSE` | Closed bar wick went below the lowest swing low but close came back above |
+| `.upper_level` | decimal (e.g. `65400.0`) | Highest swing high in lookback window (liquidity pool above) |
+| `.lower_level` | decimal (e.g. `64200.0`) | Lowest swing low in lookback window (liquidity pool below) |
+
+**Parameter:** `liq_lookback` (swing point scan window, default 20 bars)
+
+**Examples:**
+```
+liq_M15.upper_swept==TRUE          # Liquidity above was grabbed on M15
+liq_M15.upper_swept==TRUE|candle_M3.is_bullish==TRUE   # Upper sweep + M3 bullish confirmation
+liq_H1.lower_swept==TRUE|ema9_M5.slope==UP             # H1 sweep below + M5 trend turning up
+```
+
 ### Candle Patterns
 
 **Prefix:** `candle_TF` (sub-daily timeframes only)
@@ -425,6 +447,7 @@ sell: "utbot_M2.signal==SELL|ema50_M5.price_vs==BELOW|utbot_M5.bullish_since>=2|
 | `INP_UTBot_Mult` | double | 2.0 | UT Bot ATR multiplier |
 | `INP_DC_Length` | int | 20 | Donchian Channel lookback period |
 | `INP_RoundLevel` | double | 500.0 | Round number interval for proximity signals |
+| `INP_LiqLookback` | int | 20 | Liquidity sweep swing point scan window |
 
 ### External Control
 

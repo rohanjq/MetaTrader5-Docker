@@ -39,6 +39,7 @@ input int    INP_UTBot_Period   = 10;      // UT Bot ATR period
 input double INP_UTBot_Mult     = 2.0;     // UT Bot ATR multiplier
 input int    INP_DC_Length      = 20;      // Donchian Channel length
 input double INP_RoundLevel     = 500.0;   // Round number interval (e.g. 500 for BTC)
+input int    INP_LiqLookback    = 20;      // Liquidity sweep: swing point lookback bars
 
 input group "=== External Control ==="
 input bool   INP_UseControlFile  = false;  // Read ea_control.csv
@@ -57,6 +58,7 @@ input int    INP_ControlPollSec  = 5;      // Poll interval (sec)
 // atr_TF     : .value
 // vwap_TF    : .price_vs .value
 // round_TF   : .dist_above .dist_below .pct
+// liq_TF     : .upper_swept .lower_swept .upper_level .lower_level
 // candle_TF  : .type .dir .is_bullish .is_bearish
 //              .upper_wick_ratio .lower_wick_ratio .body_pct
 //              .live_*  (same fields on running bar)
@@ -602,6 +604,7 @@ void ComputeAllSignals(int tf_idx)
    ComputeATR(tf_idx);
    ComputeVWAP(tf_idx);
    ComputeRoundLevel(tf_idx);
+   ComputeLiquidity(tf_idx);
    ComputeCandleForBar(tf_idx, 1, "");   // closed bar
 }
 
@@ -905,6 +908,68 @@ void ComputeRoundLevel(int tf_idx)
    SigSet(pfx + ".dist_above", DoubleToString(distAbove, _Digits));
    SigSet(pfx + ".dist_below", DoubleToString(distBelow, _Digits));
    SigSet(pfx + ".pct",        DoubleToString(pct, 1));
+}
+
+//--- Liquidity sweep: detect sweeps past swing high/low pivot points
+void ComputeLiquidity(int tf_idx)
+{
+   ENUM_TIMEFRAMES tf = g_tfs[tf_idx];
+   string tn = g_tfNames[tf_idx];
+
+   int total = MathMin(Bars(_Symbol, tf), INP_LiqLookback + 5);
+   if(total < 6) return;
+
+   double highs[], lows[];
+   // Copy from bar 2 onward (bar 1 = closed bar we're testing, bars 2+ = history)
+   if(CopyHigh(_Symbol, tf, 2, total - 2, highs) < total - 2) return;
+   if(CopyLow(_Symbol, tf, 2, total - 2, lows)  < total - 2) return;
+   // highs[0]=oldest ... highs[n-1]=bar 2 (most recent completed swing candidate)
+
+   int cnt = ArraySize(highs);
+
+   // Find swing highs and swing lows (pivots: higher than both neighbors)
+   double upperLevel = 0;
+   double lowerLevel = DBL_MAX;
+   for(int i = 1; i < cnt - 1; i++)
+   {
+      // Swing high: bar higher than neighbors
+      if(highs[i] > highs[i-1] && highs[i] > highs[i+1])
+      {
+         if(highs[i] > upperLevel) upperLevel = highs[i];
+      }
+      // Swing low: bar lower than neighbors
+      if(lows[i] < lows[i-1] && lows[i] < lows[i+1])
+      {
+         if(lows[i] < lowerLevel) lowerLevel = lows[i];
+      }
+   }
+
+   string pfx = "liq_" + tn;
+
+   // No swing points found
+   if(upperLevel <= 0 || lowerLevel >= DBL_MAX)
+   {
+      SigSet(pfx + ".upper_swept", "FALSE");
+      SigSet(pfx + ".lower_swept", "FALSE");
+      SigSet(pfx + ".upper_level", "0");
+      SigSet(pfx + ".lower_level", "0");
+      return;
+   }
+
+   // Check if closed bar (bar 1) swept past these levels
+   double h1 = iHigh(_Symbol, tf, 1);
+   double l1 = iLow(_Symbol, tf, 1);
+   double c1 = iClose(_Symbol, tf, 1);
+
+   // Upper sweep: wick went above swing high, close came back below
+   bool upperSwept = (h1 >= upperLevel) && (c1 < upperLevel);
+   // Lower sweep: wick went below swing low, close came back above
+   bool lowerSwept = (l1 <= lowerLevel) && (c1 > lowerLevel);
+
+   SigSet(pfx + ".upper_swept", upperSwept ? "TRUE" : "FALSE");
+   SigSet(pfx + ".lower_swept", lowerSwept ? "TRUE" : "FALSE");
+   SigSet(pfx + ".upper_level", DoubleToString(upperLevel, _Digits));
+   SigSet(pfx + ".lower_level", DoubleToString(lowerLevel, _Digits));
 }
 
 //--- VWAP: session-based (from midnight)

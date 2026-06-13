@@ -117,6 +117,7 @@ def generate_inputs_section(cfg):
     lines.append(emit_input("INP_UTBot_Mult", ind.get("utbot_mult", 2.0)))
     lines.append(emit_input("INP_DC_Length", ind.get("dc_length", 20)))
     lines.append(emit_input("INP_RoundLevel", ind.get("round_level", 500.0)))
+    lines.append(emit_input("INP_LiqLookback", ind.get("liq_lookback", 20)))
 
     # External Control
     lines.append("; === External Control ===")

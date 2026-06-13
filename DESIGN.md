@@ -249,7 +249,22 @@ Tracks where price sits relative to psychological round-number levels (configura
 **Why this matters:**
 BTC has strong psychological levels at multiples of 500 (65000, 65500, 66000). Price gravitates toward these levels. If a buy signal fires when price is at pct=70 (near the next round above), the TP is likely to get hit because the round number acts as a magnet. Conversely, SL placement near a round number increases the risk of stop-hunting.
 
-### 5.11 VWAP (`ComputeVWAP`)
+### 5.11 Liquidity Sweep (`ComputeLiquidity`)
+
+Detects price sweeping past swing high/low pivot points — areas where stop-losses and resting orders cluster ("liquidity pools"). When price pierces these levels with a wick but closes back inside, it signals a potential stop-hunt reversal.
+
+**Algorithm:**
+1. Copy last `INP_LiqLookback` bars of highs and lows (from bar 2 onward — bar 1 is the test bar).
+2. Scan for swing highs: `high[i] > high[i-1] AND high[i] > high[i+1]`; take highest as `upper_level`.
+3. Scan for swing lows: `low[i] < low[i-1] AND low[i] < low[i+1]`; take lowest as `lower_level`.
+4. Check closed bar (bar 1):
+   - `upper_swept`: `high[1] >= upper_level AND close[1] < upper_level`
+   - `lower_swept`: `low[1] <= lower_level AND close[1] > lower_level`
+
+**Difference from Donchian wick rejection:**
+DC uses the highest high / lowest low of N bars (channel boundary). Liquidity sweeps use actual *pivot points* (local highs/lows where price previously reversed), which are the exact spots where traders place stops.
+
+### 5.12 VWAP (`ComputeVWAP`)
 
 Session-based VWAP computed from midnight (server time).
 
@@ -266,7 +281,7 @@ Most forex/CFD brokers don't provide real volume. Tick volume is the standard pr
 **Why skip daily+ timeframes?**  
 VWAP is an intraday indicator. On daily bars, there's only one bar per session — the concept doesn't apply.
 
-### 5.12 Candle Patterns (`ComputeCandleForBar`)
+### 5.13 Candle Patterns (`ComputeCandleForBar`)
 
 Reusable function that works on any bar index with a prefix parameter:
 - `ComputeCandleForBar(tf_idx, 1, "")` → closed bar → keys like `candle_M3.type`

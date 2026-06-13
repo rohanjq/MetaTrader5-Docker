@@ -148,6 +148,10 @@ Conditions joined with `|` are AND-ed (all must be true). Operators: `==`, `!=`,
 | `round_TF.dist_above` | decimal | Distance in $ to next round level above |
 | `round_TF.dist_below` | decimal | Distance in $ to next round level below |
 | `round_TF.pct` | decimal (0-100) | Position within round range (0=lower, 100=upper) |
+| `liq_TF.upper_swept` | `TRUE`, `FALSE` | Wick swept above swing high, close came back below |
+| `liq_TF.lower_swept` | `TRUE`, `FALSE` | Wick swept below swing low, close came back above |
+| `liq_TF.upper_level` | decimal | Highest swing high in lookback window |
+| `liq_TF.lower_level` | decimal | Lowest swing low in lookback window |
 
 **Timeframes (TF):** `M1`, `M2`, `M3`, `M5`, `M10`, `M15`, `M30`, `H1`, `H4`, `D1`
 
