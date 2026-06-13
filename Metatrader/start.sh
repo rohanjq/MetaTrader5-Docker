@@ -310,34 +310,12 @@ if [ -e "$MT5_EXE" ]; then
     if [ "$MT5_MODE" = "tester" ]; then
         log "[7/7] === TESTER MODE ==="
 
-        # Seed desktop symbol specs so tester has SYMBOL_TRADE_MODE_FULL
-        # (broker returns CLOSEONLY during weekends; cached specs avoid this)
-        # Actual path: Bases/PXBTTrading-1/symbols/symbols-1262395.dat
+        # Read credentials from auto_login.ini
         _login=$(grep -i "^Login=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
         _password=$(grep -i "^Password=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
         _server=$(grep -i "^Server=" "$MT5_CONFIG_DIR/auto_login.ini" | head -1 | cut -d= -f2)
-        symbols_dir="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/Bases/${_server}/symbols"
-        if [ -d "/Metatrader/bases/PXBTTrading-1" ]; then
-            mkdir -p "$symbols_dir"
-            for f in /Metatrader/bases/PXBTTrading-1/*.dat; do
-                fname=$(basename "$f")
-                # Rename generic files to account-specific: symbols.dat → symbols-LOGIN.dat
-                target_name=$(echo "$fname" | sed "s/\.dat$/-${_login}.dat/")
-                cp "$f" "$symbols_dir/$target_name"
-                log "[7/7] Seeded $target_name → Bases/${_server}/symbols/"
-            done
-        fi
 
-        # Clean stale tester agent data from previous runs
-        tester_dir="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/Tester"
-        if [ -d "$tester_dir/Agent-127.0.0.1-3002/bases" ]; then
-            rm -rf "$tester_dir/Agent-127.0.0.1-3002/bases"
-            log "[7/7] Cleared stale agent bases cache"
-        fi
-
-        # Build single config: [Common] (auth) + [Tester] (testing)
-        # Terminal authenticates, syncs, then auto-starts tester in same session
-        # (matches desktop behavior where tester runs inside running terminal)
+        # Build single config: [Common] (auth) + [Tester] + [TesterInputs]
         {
             echo "[Common]"
             echo "Login=${_login}"
@@ -349,12 +327,16 @@ if [ -e "$MT5_EXE" ]; then
         cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
         log "[7/7] tester.ini built: Login=${_login} Server=${_server}"
 
-        log "[7/7] Launching MT5 with tester config (single session)..."
+        # NOTE: Backtests will fail with 10044 during weekends/market-closed
+        # hours because broker sends SYMBOL_TRADE_MODE_CLOSEONLY on fresh login.
+        # This is a broker limitation, not a Wine/config issue.
+        # Only run backtests during market hours (Sun 5pm - Fri 5pm ET).
+
+        log "[7/7] Launching MT5 with tester config..."
         mt5_args="/portable /config:${MT5_WIN_CONFIG}\\tester.ini"
         $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
         MT5_PID=$!
 
-        # Wait for tester to finish (ShutdownTerminal=1 in ini)
         log "[7/7] Waiting for backtest to complete (PID $MT5_PID)..."
         wait $MT5_PID 2>/dev/null || true
 
