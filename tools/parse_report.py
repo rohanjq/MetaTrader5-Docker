@@ -150,6 +150,63 @@ def enrich_deals(deals):
     return deals
 
 
+def compute_by_strategy(deals):
+    """Compute per-strategy P&L breakdown from deals.
+    Pairs sequential in/out deals to attribute profit to the entry strategy."""
+    from collections import OrderedDict
+    strats = OrderedDict()
+    pending_strategy = None
+
+    for d in deals:
+        if d.get("type") == "balance":
+            continue
+        if d.get("direction") == "in":
+            pending_strategy = d.get("strategy") or ""
+            continue
+        if d.get("direction") == "out" and pending_strategy is not None:
+            name = pending_strategy or "unknown"
+            profit_str = d.get("profit", "0").replace("\u00a0", "").replace(" ", "")
+            try:
+                profit = float(profit_str)
+            except ValueError:
+                profit = 0.0
+
+            if name not in strats:
+                strats[name] = {"strategy": name, "trades": 0, "wins": 0,
+                                "losses": 0, "pnl": 0.0, "buys": 0, "sells": 0}
+            s = strats[name]
+            s["trades"] += 1
+            s["pnl"] += profit
+            if profit > 0:
+                s["wins"] += 1
+            else:
+                s["losses"] += 1
+            # Determine direction from the entry deal type
+            # The exit deal type is opposite, so buy-out means it was a sell entry
+            # We need to look at the entry — which we tracked via pending
+            pending_strategy = None
+
+    # Re-scan entries for buy/sell counts
+    pending = None
+    for d in deals:
+        if d.get("type") == "balance":
+            continue
+        if d.get("direction") == "in":
+            name = d.get("strategy") or "unknown"
+            if name in strats:
+                if d["type"] == "buy":
+                    strats[name]["buys"] += 1
+                else:
+                    strats[name]["sells"] += 1
+
+    # Sort by PnL descending, round pnl
+    result = sorted(strats.values(), key=lambda x: -x["pnl"])
+    for r in result:
+        r["pnl"] = round(r["pnl"], 2)
+        r["win_pct"] = round(100 * r["wins"] / r["trades"], 1) if r["trades"] else 0.0
+    return result
+
+
 # -- Key metrics for --human output --
 HUMAN_METRICS = [
     "Total Net Profit",
@@ -205,27 +262,16 @@ def write_human(data, dest):
                     f"{d.get('strategy', '')}"
                 )
 
-        # Per-strategy breakdown
-        entry_deals = [d for d in data["deals"]
-                       if d.get("direction") == "in" and d.get("strategy")]
-        if entry_deals:
-            strat_stats = {}
-            for d in entry_deals:
-                s = d["strategy"]
-                if s not in strat_stats:
-                    strat_stats[s] = {"count": 0, "buy": 0, "sell": 0}
-                strat_stats[s]["count"] += 1
-                if d["type"] == "buy":
-                    strat_stats[s]["buy"] += 1
-                else:
-                    strat_stats[s]["sell"] += 1
-
-            lines.append("")
-            lines.append("═══ BY STRATEGY ═══")
-            lines.append(f"  {'Strategy':<40s} {'Trades':>6s} {'Buys':>6s} {'Sells':>6s}")
-            lines.append("  " + "─" * 60)
-            for s, st in sorted(strat_stats.items(), key=lambda x: -x[1]["count"]):
-                lines.append(f"  {s:<40s} {st['count']:>6d} {st['buy']:>6d} {st['sell']:>6d}")
+    if "by_strategy" in data and data["by_strategy"]:
+        lines.append("")
+        lines.append("═══ BY STRATEGY ═══")
+        lines.append(f"  {'Strategy':<40s} {'Trades':>6s} {'Wins':>5s} {'Loss':>5s} {'Win%':>6s} {'PnL':>12s}")
+        lines.append("  " + "─" * 80)
+        for s in data["by_strategy"]:
+            lines.append(
+                f"  {s['strategy']:<40s} {s['trades']:>6d} {s['wins']:>5d} "
+                f"{s['losses']:>5d} {s['win_pct']:>5.0f}% {s['pnl']:>+12.2f}"
+            )
 
     if "orders" in data and data["orders"]:
         lines.append("")
@@ -289,6 +335,15 @@ def write_csv(data, dest):
         w.writerows(data["deals"])
         sections["deals"] = buf.getvalue()
 
+    # By strategy
+    if "by_strategy" in data and data["by_strategy"]:
+        buf = io.StringIO()
+        cols = list(data["by_strategy"][0].keys())
+        w = csv.DictWriter(buf, fieldnames=cols)
+        w.writeheader()
+        w.writerows(data["by_strategy"])
+        sections["by_strategy"] = buf.getvalue()
+
     if dest and os.path.isdir(dest):
         for name, content in sections.items():
             if content:
@@ -320,12 +375,13 @@ def main():
     section.add_argument("--summary", action="store_true", help="Summary stats only (default)")
     section.add_argument("--deals", action="store_true", help="Deals table only")
     section.add_argument("--orders", action="store_true", help="Orders table only")
+    section.add_argument("--by-strategy", action="store_true", dest="by_strategy", help="Per-strategy P&L breakdown")
     section.add_argument("--all", action="store_true", help="All sections")
     parser.add_argument("-o", "--output", default=None, help="Output file or directory (for CSV)")
     args = parser.parse_args()
 
     # Default to summary if no section specified
-    if not (args.deals or args.orders or args.all):
+    if not (args.deals or args.orders or args.all or args.by_strategy):
         args.summary = True
 
     html = read_html(args.report)
@@ -334,10 +390,15 @@ def main():
     data = {}
     if args.summary or args.all:
         data["summary"] = parse_results(html)
-    if args.deals or args.all:
+    if args.deals or args.all or args.by_strategy:
         data["deals"] = enrich_deals(parse_deals(html))
     if args.orders or args.all:
         data["orders"] = parse_orders(html)
+    if args.by_strategy or args.all:
+        data["by_strategy"] = compute_by_strategy(data["deals"])
+    # If only --by-strategy, don't include raw deals in output
+    if args.by_strategy and not args.all:
+        del data["deals"]
 
     if args.human:
         write_human(data, args.output)
