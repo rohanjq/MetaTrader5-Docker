@@ -549,9 +549,11 @@ void OnTrade()
       string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
 
       // Extract strategy name from comment "MT|strategy_name" for exact matching
+      // Use StringFind >= 0 to handle brokers that prepend text (e.g. "[sl] MT|name")
       string matchName = "";
-      if(StringFind(comment, "MT|") == 0)
-         matchName = StringSubstr(comment, 3);
+      int mtPos = StringFind(comment, "MT|");
+      if(mtPos >= 0)
+         matchName = StringSubstr(comment, mtPos + 3);
 
       for(int s = 0; s < g_stratCount; s++)
       {
@@ -860,11 +862,13 @@ void ComputeBB(int tf_idx)
 
    double cls  = iClose(_Symbol, g_tfs[tf_idx], 1);
    double prev = iClose(_Symbol, g_tfs[tf_idx], 2);
-   bool reenter = (prev < lower[0]) && (cls >= lower[1]);
+   bool reenterBelow = (prev < lower[0]) && (cls >= lower[1]);
+   bool reenterAbove = (prev > upper[0]) && (cls <= upper[1]);
 
    string pfx = "bb_" + tn;
-   SigSet(pfx + ".squeeze",       squeeze ? "TRUE" : "FALSE");
-   SigSet(pfx + ".reenter_below", reenter ? "TRUE" : "FALSE");
+   SigSet(pfx + ".squeeze",        squeeze ? "TRUE" : "FALSE");
+   SigSet(pfx + ".reenter_below",  reenterBelow ? "TRUE" : "FALSE");
+   SigSet(pfx + ".reenter_above",  reenterAbove ? "TRUE" : "FALSE");
 }
 
 //--- ATR: raw value

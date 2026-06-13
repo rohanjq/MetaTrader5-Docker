@@ -229,6 +229,7 @@ Uses native `iBands` handle (20, 0, 2.0).
 **Fields:**
 - `squeeze`: TRUE if current bandwidth < 75% of previous bar's bandwidth
 - `reenter_below`: TRUE if previous bar closed below lower band and current bar closed above it
+- `reenter_above`: TRUE if previous bar closed above upper band and current bar closed at or below it
 
 ### 5.9 ATR (`ComputeATR`)
 

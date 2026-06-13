@@ -55,7 +55,7 @@ control:
 #   Multiple conditions joined with | means AND (all must be true)
 #
 # Available operators: ==, !=, >, <, >=, <=, in, not_in
-# Available signals (see docs/signals.md for full reference):
+# Available signals (see docs/ea.md for full reference):
 #   utbot_TF.signal (BUY/SELL), .bias (BULLISH/BEARISH)
 #   rsi2_TF.zone (EXTREME_OB/OB/NEUTRAL/OS/EXTREME_OS)
 #   rsi14_TF.zone (OB/NEUTRAL/OS)
