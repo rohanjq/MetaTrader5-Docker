@@ -52,6 +52,7 @@ indicators:
   utbot_period: 10
   utbot_mult: 2.0
   dc_length: 20
+  round_level: 500.0          # Round number interval (500 for BTC)
 
 # --- External control (live mode only) ---
 control:

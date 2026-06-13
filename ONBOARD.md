@@ -145,6 +145,9 @@ Conditions joined with `|` are AND-ed (all must be true). Operators: `==`, `!=`,
 | `candle_TF.is_bullish` | `TRUE`, `FALSE` | Bullish candle |
 | `candle_TF.is_bearish` | `TRUE`, `FALSE` | Bearish candle |
 | `candle_TF.type` | `DOJI`, `MARUBOZU`, `HAMMER`, `SHOOTING_STAR`, `SPINNING_TOP`, `NORMAL` | Candle pattern |
+| `round_TF.dist_above` | decimal | Distance in $ to next round level above |
+| `round_TF.dist_below` | decimal | Distance in $ to next round level below |
+| `round_TF.pct` | decimal (0-100) | Position within round range (0=lower, 100=upper) |
 
 **Timeframes (TF):** `M1`, `M2`, `M3`, `M5`, `M10`, `M15`, `M30`, `H1`, `H4`, `D1`
 

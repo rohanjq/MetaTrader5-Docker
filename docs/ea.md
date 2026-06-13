@@ -245,6 +245,27 @@ vwap_M1.price_vs==BELOW           # Price below session VWAP
 vwap_M5.price_vs==ABOVE           # Price above session VWAP
 ```
 
+### Round Number Proximity
+
+**Prefix:** `round_TF`
+
+Tracks distance to the nearest psychological round-number levels (configurable interval, default 500 for BTC — e.g. 65000, 65500, 66000).
+
+| Key | Values | Description |
+|---|---|---|
+| `.dist_above` | decimal (e.g. `150.0`) | Distance in $ to the next round level above |
+| `.dist_below` | decimal (e.g. `350.0`) | Distance in $ to the next round level below |
+| `.pct` | decimal (e.g. `70.0`) | Position within the current round range (0=at lower, 100=at upper) |
+
+**Parameter:** `round_level` (round number interval, default 500.0)
+
+**Examples:**
+```
+round_M1.pct>=70                   # Price in upper 30% of round range (near next level above)
+round_M1.dist_above<=100           # Within $100 of the next round level above
+round_M5.pct<=30                   # Price near the bottom of the round range
+```
+
 ### Candle Patterns
 
 **Prefix:** `candle_TF` (sub-daily timeframes only)
@@ -395,6 +416,15 @@ sell: "utbot_M2.signal==SELL|ema50_M5.price_vs==BELOW|utbot_M5.bullish_since>=2|
 | `INP_BreakevenStart` | double | 0.0 | Move SL to entry after $X profit (0=off) |
 | `INP_TrailStart` | double | 0.0 | Start trailing after $X profit (0=off) |
 | `INP_TrailStep` | double | 2.0 | Trail distance in dollars |
+
+### Indicator Parameters
+
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `INP_UTBot_Period` | int | 10 | UT Bot ATR period |
+| `INP_UTBot_Mult` | double | 2.0 | UT Bot ATR multiplier |
+| `INP_DC_Length` | int | 20 | Donchian Channel lookback period |
+| `INP_RoundLevel` | double | 500.0 | Round number interval for proximity signals |
 
 ### External Control
 

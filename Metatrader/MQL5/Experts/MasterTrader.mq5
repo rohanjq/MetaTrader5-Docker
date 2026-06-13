@@ -38,6 +38,7 @@ input group "=== Indicator Parameters ==="
 input int    INP_UTBot_Period   = 10;      // UT Bot ATR period
 input double INP_UTBot_Mult     = 2.0;     // UT Bot ATR multiplier
 input int    INP_DC_Length      = 20;      // Donchian Channel length
+input double INP_RoundLevel     = 500.0;   // Round number interval (e.g. 500 for BTC)
 
 input group "=== External Control ==="
 input bool   INP_UseControlFile  = false;  // Read ea_control.csv
@@ -55,6 +56,7 @@ input int    INP_ControlPollSec  = 5;      // Poll interval (sec)
 // bb_TF      : .squeeze .reenter_below
 // atr_TF     : .value
 // vwap_TF    : .price_vs .value
+// round_TF   : .dist_above .dist_below .pct
 // candle_TF  : .type .dir .is_bullish .is_bearish
 //              .upper_wick_ratio .lower_wick_ratio .body_pct
 //              .live_*  (same fields on running bar)
@@ -599,6 +601,7 @@ void ComputeAllSignals(int tf_idx)
    ComputeBB(tf_idx);
    ComputeATR(tf_idx);
    ComputeVWAP(tf_idx);
+   ComputeRoundLevel(tf_idx);
    ComputeCandleForBar(tf_idx, 1, "");   // closed bar
 }
 
@@ -881,6 +884,27 @@ void ComputeATR(int tf_idx)
    if(CopyBuffer(handle, 0, 1, 1, atr) < 1) return;
 
    SigSet("atr_" + g_tfNames[tf_idx] + ".value", DoubleToString(atr[0], _Digits));
+}
+
+//--- Round number proximity: distance to nearest round levels
+void ComputeRoundLevel(int tf_idx)
+{
+   if(INP_RoundLevel <= 0) return;
+   string tn = g_tfNames[tf_idx];
+
+   double price = iClose(_Symbol, g_tfs[tf_idx], 1);
+   if(price <= 0) return;
+
+   double lower = MathFloor(price / INP_RoundLevel) * INP_RoundLevel;
+   double upper = lower + INP_RoundLevel;
+   double distAbove = upper - price;
+   double distBelow = price - lower;
+   double pct = (distBelow / INP_RoundLevel) * 100.0;
+
+   string pfx = "round_" + tn;
+   SigSet(pfx + ".dist_above", DoubleToString(distAbove, _Digits));
+   SigSet(pfx + ".dist_below", DoubleToString(distBelow, _Digits));
+   SigSet(pfx + ".pct",        DoubleToString(pct, 1));
 }
 
 //--- VWAP: session-based (from midnight)

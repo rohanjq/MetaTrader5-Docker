@@ -235,7 +235,21 @@ Uses native `iBands` handle (20, 0, 2.0).
 
 Uses native `iATR` handle (period 14). Outputs raw value only.
 
-### 5.10 VWAP (`ComputeVWAP`)
+### 5.10 Round Number Proximity (`ComputeRoundLevel`)
+
+Tracks where price sits relative to psychological round-number levels (configurable via `INP_RoundLevel`, default 500 for BTC).
+
+**Algorithm:**
+1. Get closed bar close price.
+2. `lower = floor(price / round_level) * round_level`
+3. `upper = lower + round_level`
+4. `dist_above = upper - price`, `dist_below = price - lower`
+5. `pct = dist_below / round_level * 100` (0 = at lower level, 100 = at upper level)
+
+**Why this matters:**
+BTC has strong psychological levels at multiples of 500 (65000, 65500, 66000). Price gravitates toward these levels. If a buy signal fires when price is at pct=70 (near the next round above), the TP is likely to get hit because the round number acts as a magnet. Conversely, SL placement near a round number increases the risk of stop-hunting.
+
+### 5.11 VWAP (`ComputeVWAP`)
 
 Session-based VWAP computed from midnight (server time).
 
@@ -252,7 +266,7 @@ Most forex/CFD brokers don't provide real volume. Tick volume is the standard pr
 **Why skip daily+ timeframes?**  
 VWAP is an intraday indicator. On daily bars, there's only one bar per session — the concept doesn't apply.
 
-### 5.11 Candle Patterns (`ComputeCandleForBar`)
+### 5.12 Candle Patterns (`ComputeCandleForBar`)
 
 Reusable function that works on any bar index with a prefix parameter:
 - `ComputeCandleForBar(tf_idx, 1, "")` → closed bar → keys like `candle_M3.type`

@@ -316,11 +316,28 @@ For each strategy:
 8. If it's garbage after 2-3 tuning attempts, dump it and try a different idea
 
 ### SL/RR guidelines for BTCUSDT:
-- **Tight scalp:** SL=200, RR=1.5-2.0 (small risk, needs precise entry)
-- **Standard:** SL=300-500, RR=1.25-1.5 (balanced)
-- **Wide net:** SL=800, RR=1.0-1.25 (higher win rate, needs good filtering)
-- Start with SL=500 RR=1.5 as baseline, then try tight (200) and wide (800)
+- **Tight scalp:** SL=200, RR=1.5-2.5 (small risk, needs precise entry)
+- **Standard:** SL=300-400, RR=1.25-1.5 (balanced)
+- **Wide:** SL=500-550, RR=1.0-1.25 (higher win rate, needs good filtering)
+- **NEVER go above SL=550** — anything wider is too much risk for BTC
+- Start with SL=350 RR=1.5 as baseline, then try tight (200) and wide (500)
 - **Always try breakeven** on promising strategies — set `breakeven_start` to ~50% of TP
+
+### Round number awareness (IMPORTANT for BTC):
+BTC has strong psychological levels at **multiples of 500** (65000, 65500, 66000, etc.). Price gravitates toward these levels and often bounces off them. The EA provides `round_TF.*` signals for this:
+
+```
+round_M1.dist_above    → distance in $ to the next 500-multiple above
+round_M1.dist_below    → distance in $ to the next 500-multiple below
+round_M1.pct           → % position within the current 500-range (0=at lower, 100=at upper)
+```
+
+**Use these to:**
+- **Filter entries** — if buy signal fires and `round_M1.pct>=80` (close to next round above), TP will likely get hit. But if `round_M1.pct<=20` (just above a round below), price already touched the round and may not have momentum.
+- **Avoid bad SL/TP placement** — if your SL would land right on a round number, it's more likely to get stop-hunted. Check `round_M1.dist_below` for buys.
+- **Idea:** Buy when price is above a round level but hasn't reached the next one yet: `round_M1.pct>=10|round_M1.pct<=70` (in the sweet spot of the range, not at extremes).
+
+**Example:** Price at 65350. Lower round = 65000, upper round = 65500. `dist_above=150`, `dist_below=350`, `pct=70`. A buy here has 150 left to the next magnet level.
 
 ---
 
@@ -347,3 +364,19 @@ Run one final combined backtest with all winning strategies enabled together and
 7. **Read the docs first** — don't guess signal names, read `docs/ea.md` for exact syntax
 8. **Both directions** — try to have both buy and sell strategies (doesn't have to be in same strategy slot)
 9. **Log everything** — paste the --human output for each test so we can review later
+10. **Max SL = 550** — never set SL above 550 for BTCUSDT
+11. **Round numbers matter** — use `round_TF.*` signals to factor in BTC's 500-multiple psychology
+
+---
+
+## AUTONOMY INSTRUCTIONS
+
+**You are fully autonomous.** Do NOT ask for confirmation before running backtests, editing configs, or trying new ideas. Just do it.
+
+- Do NOT pause to ask "should I proceed?" or "shall I test this?" — just run it
+- Do NOT ask which strategy to try next — pick the next one yourself
+- Do NOT ask about SL/RR values to try — try all reasonable combos yourself
+- If a test fails, adjust and re-run immediately without asking
+- If you need to think through something complex, **use a subagent / subdivide the task** to avoid losing context or hallucinating in the main thread
+- Work through all 10 strategies sequentially, logging results as you go
+- Only stop and report when you have final results for all 10 strategies
