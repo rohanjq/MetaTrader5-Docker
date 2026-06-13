@@ -323,11 +323,12 @@ Run one final combined backtest with all winning strategies enabled together and
 
 ## CRITICAL RULES
 
-1. **Test ONE strategy at a time** — disable all others when testing a new one
-2. **Do not modify the EA code** — strategies are expression-only, no .mq5 changes
-3. **2-month window minimum** — from 2026.04.13 to 2026.06.13
-4. **BTCUSDT only** — all strategies must target this symbol
-5. **Be creative** — the whole point is non-obvious strategies. If you catch yourself writing a basic "RSI oversold buy" strategy, stop and rethink.
-6. **Read the docs first** — don't guess signal names, read `docs/ea.md` for exact syntax
-7. **Both directions** — try to have both buy and sell strategies (doesn't have to be in same strategy slot)
-8. **Log everything** — paste the --human output for each test so we can review later
+1. **NEVER catch a falling knife** — This is the #1 rule. Even if you detect a trap setup, you must ALWAYS require at least one small confirmation signal that price has actually started reversing. For example, a M1 or M3 candle going in your trade direction (`candle_M1.is_bullish==TRUE` for buys, `candle_M1.is_bearish==TRUE` for sells), or a UT Bot signal flip on a small timeframe (`utbot_M3.signal==BUY`). The trap setup is the context — the confirmation candle is the trigger. Without confirmation, you're just guessing the bottom/top and will get destroyed. Every single strategy must have a confirmation condition.
+2. **Test ONE strategy at a time** — disable all others when testing a new one
+3. **Do not modify the EA code** — strategies are expression-only, no .mq5 changes
+4. **2-month window minimum** — from 2026.04.13 to 2026.06.13
+5. **BTCUSDT only** — all strategies must target this symbol
+6. **Be creative** — the whole point is non-obvious strategies. If you catch yourself writing a basic "RSI oversold buy" strategy, stop and rethink.
+7. **Read the docs first** — don't guess signal names, read `docs/ea.md` for exact syntax
+8. **Both directions** — try to have both buy and sell strategies (doesn't have to be in same strategy slot)
+9. **Log everything** — paste the --human output for each test so we can review later
