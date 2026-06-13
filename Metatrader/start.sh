@@ -40,6 +40,7 @@ MT5_STARTUP_EA="${MT5_STARTUP_EA:-}"
 MT5_STARTUP_SYMBOL="${MT5_STARTUP_SYMBOL:-BTCUSDT}"
 MT5_STARTUP_PERIOD="${MT5_STARTUP_PERIOD:-M1}"
 MT5_CMD_OPTIONS="${MT5_CMD_OPTIONS:-}"
+MT5_MODE="${MT5_MODE:-live}"             # "live" or "tester"
 
 # ---- Helpers ----------------------------------------------
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
@@ -277,31 +278,72 @@ fi
 # [7/7] Launch MT5 terminal + rpyc server
 # ============================================================
 if [ -e "$MT5_EXE" ]; then
-    log "[7/7] Launching MT5 terminal..."
-    mt5_args="/portable"
-    if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
-        mt5_args="$mt5_args /config:${MT5_WIN_CONFIG}\\auto_login.ini"
-    fi
-
     cd "$(dirname "$MT5_EXE")"
-    $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
-    sleep 20
-    log "[7/7] MT5 terminal launched."
+
+    if [ "$MT5_MODE" = "tester" ]; then
+        log "[7/7] === TESTER MODE ==="
+
+        # Create reports directory
+        mkdir -p "$DATA_DIR/reports"
+
+        # Copy template tester.ini and allow user override from /data/config/
+        if [ -f "$DATA_DIR/config/tester.ini" ]; then
+            log "[7/7] Using user-provided tester.ini from /data/config/"
+            cp "$DATA_DIR/config/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
+        elif [ -f "/Metatrader/tester.ini" ]; then
+            log "[7/7] Using bundled tester.ini template"
+            cp "/Metatrader/tester.ini" "$MT5_CONFIG_DIR/tester.ini"
+        else
+            log "[7/7] ERROR: No tester.ini found"
+            exit 1
+        fi
+
+        log "[7/7] Launching MT5 Strategy Tester..."
+        $WINE "$(basename "$MT5_EXE")" /portable /config:"${MT5_WIN_CONFIG}\\tester.ini" $MT5_CMD_OPTIONS &
+        MT5_PID=$!
+
+        # Wait for tester to finish (ShutdownTerminal=1 in ini)
+        log "[7/7] Waiting for backtest to complete (PID $MT5_PID)..."
+        wait $MT5_PID 2>/dev/null || true
+
+        # Check for report
+        if ls "$DATA_DIR/reports"/backtest_report* 1>/dev/null 2>&1; then
+            log "[7/7] Backtest report saved to /data/reports/"
+            ls -la "$DATA_DIR/reports"/backtest_report*
+        else
+            log "[7/7] WARNING: No report file found in /data/reports/"
+        fi
+
+        log "[7/7] Tester run complete."
+    else
+        log "[7/7] Launching MT5 terminal..."
+        mt5_args="/portable"
+        if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
+            mt5_args="$mt5_args /config:${MT5_WIN_CONFIG}\\auto_login.ini"
+        fi
+
+        $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
+        sleep 20
+        log "[7/7] MT5 terminal launched."
+    fi
 fi
 
-log "[7/7] Starting rpyc server on port $RPYC_PORT..."
-$WINE python.exe -c "
+# Only start rpyc in live mode
+if [ "$MT5_MODE" != "tester" ]; then
+    log "[7/7] Starting rpyc server on port $RPYC_PORT..."
+    $WINE python.exe -c "
 import rpyc
 from rpyc.utils.server import ThreadedServer
 server = ThreadedServer(rpyc.ClassicService, hostname='0.0.0.0', port=$RPYC_PORT)
 server.start()
 " &
 
-sleep 5
-if ss -tuln | grep -q ":$RPYC_PORT"; then
-    log "[7/7] rpyc server running on port $RPYC_PORT"
-else
-    log "[7/7] WARNING: rpyc server failed to start on port $RPYC_PORT"
+    sleep 5
+    if ss -tuln | grep -q ":$RPYC_PORT"; then
+        log "[7/7] rpyc server running on port $RPYC_PORT"
+    else
+        log "[7/7] WARNING: rpyc server failed to start on port $RPYC_PORT"
+    fi
 fi
 
 log "Startup complete."
