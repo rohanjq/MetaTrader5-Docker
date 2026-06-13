@@ -1,8 +1,5 @@
 FROM ghcr.io/linuxserver/baseimage-kasmvnc:debianbookworm
 
-# --build-arg UPDATE_PACKAGES=true  → runs apt-get upgrade during build
-ARG UPDATE_PACKAGES=false
-
 LABEL maintainer="rohanjq"
 
 ENV TITLE=Metatrader5
@@ -11,7 +8,6 @@ ENV WINEDEBUG=-all
 
 # System packages + Wine (single layer)
 RUN apt-get update \
-    && if [ "$UPDATE_PACKAGES" = "true" ]; then apt-get upgrade -y; fi \
     && apt-get install -y --no-install-recommends \
         python3 python3-pip python3-venv \
         python3-xdg \

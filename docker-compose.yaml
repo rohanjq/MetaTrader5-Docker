@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        UPDATE_PACKAGES: "false"
     image: mt5-docker
     container_name: mt5
     volumes:
