@@ -275,18 +275,38 @@ python3 tools/parse_report.py data/reports/backtest_report.htm --human --all
 - **Trades > 10** — fewer = not enough data (sweep signals are inherently rare, so lower threshold ok)
 - **Must test on full 2-month window** (2026.04.13 – 2026.06.13)
 
+## CRITICAL: Test ONE Strategy at a Time
+
+**Never put multiple strategies in the config for a single backtest run.** Strategy order and multi_position settings distort results — the first strategy in the list gets priority on signals, stealing trades from later strategies. This makes combined PFs unreliable.
+
+For every backtest run, your config should have **exactly 1 strategy enabled**. All other strategy slots should be `enabled: false` or removed. This gives you the true standalone PF for that strategy.
+
+```yaml
+strategies:
+  - name: test_this_one
+    enabled: true
+    sl: 350.0
+    rr: 1.5
+    buy: "liq_M15.lower_swept==TRUE|utbot_H1.bias==BULLISH|candle_M3.is_bullish==TRUE|ema200_M15.price_vs==ABOVE"
+    sell: ""
+```
+
+Do NOT worry about combining strategies — that is a separate step done later. Your job is to find strategies that are profitable **individually**.
+
 ## Important: What NOT to Do
 
-1. **Don't test liq_M15.upper_swept for BUY** — that means price went above and came back = SELL signal, not buy. Upper sweep = sell setup, lower sweep = buy setup.
-2. **Don't remove candle confirmation (M3)** — you proved M3 confirmation is mandatory in every profitable strategy
-3. **Don't use breakeven** — you proved it hurts PF
-4. **Don't use M1 candle confirmation** — you proved it's noise
-5. **Don't test without trend filter** — sweep alone without trend context = random
+1. **Don't put multiple strategies in one backtest** — results will be wrong (see above)
+2. **Don't test liq_M15.upper_swept for BUY** — that means price went above and came back = SELL signal, not buy. Upper sweep = sell setup, lower sweep = buy setup.
+3. **Don't remove candle confirmation (M3)** — you proved M3 confirmation is mandatory in every profitable strategy
+4. **Don't use breakeven** — you proved it hurts PF
+5. **Don't use M1 candle confirmation** — you proved it's noise
+6. **Don't test without trend filter** — sweep alone without trend context = random
 
 ## Deliverable
 
-1. Update `data/config/config.yaml` with your best strategies (PF > 1.2 only)
-2. Write results to `STRATEGY-RESULTS.md` with per-strategy metrics
+1. Update `data/config/config.yaml` with your **single best strategy** (highest PF)
+2. Write results to `STRATEGY-RESULTS.md` with **all** strategies tested and their standalone metrics
 3. For each strategy: document expression, SL/RR, standalone PF/WR/Trades, liq_lookback used
-4. Note which lookback values worked best
-5. Rank by confidence: HIGH (>20 trades, PF>1.3), MEDIUM (10-20 trades, PF>1.2), LOW (<10 trades)
+4. Every PF number must be from a **single-strategy backtest** (not combined)
+5. Note which lookback values worked best
+6. Rank by confidence: HIGH (>20 trades, PF>1.3), MEDIUM (10-20 trades, PF>1.2), LOW (<10 trades)

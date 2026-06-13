@@ -202,11 +202,17 @@ python3 tools/parse_report.py data/reports/backtest_report.htm --human --all
 - **MaxDD < 40%** — above this is too risky
 - **Must test on full 2-month window** — no 5-day tests, they overfit
 
+## CRITICAL: Test ONE Strategy at a Time
+
+**Never put multiple strategies in the config for a single backtest run.** Strategy order and multi_position settings distort results — the first strategy gets priority on signals, stealing trades from later ones. Combined PFs are unreliable.
+
+For every backtest, your config should have **exactly 1 strategy enabled**. This gives you the true standalone PF.
+
 ## Step 5: Deliverable
 
-1. Update `data/config/config.yaml` with your best strategies (PF > 1.2 only)
-2. Write results to `STRATEGY-RESULTS.md` with per-strategy metrics
-3. Run one final combined backtest with all winners enabled
+1. Update `data/config/config.yaml` with your **single best strategy** (highest PF)
+2. Write results to `STRATEGY-RESULTS.md` with **all** strategies tested and their standalone metrics
+3. Every PF number must be from a **single-strategy backtest** (not combined)
 4. For each strategy: document expression, SL/RR/breakeven, standalone PF/WR/Trades/DD
 
 ## RULES
