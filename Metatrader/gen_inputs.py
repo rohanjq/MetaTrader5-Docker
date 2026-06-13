@@ -154,7 +154,14 @@ def main():
     args = parser.parse_args()
 
     with open(args.config) as f:
-        cfg = yaml.safe_load(f)
+        try:
+            cfg = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            sys.exit(f"ERROR: Invalid YAML in {args.config}:\n{e}")
+    if not isinstance(cfg, dict):
+        sys.exit(f"ERROR: {args.config} does not contain a valid YAML config (got {type(cfg).__name__})")
+    if "strategies" not in cfg and "global" not in cfg:
+        sys.exit(f"ERROR: {args.config} missing 'strategies' or 'global' keys — is this a YAML config file?")
 
     lines = []
     if not args.inputs_only:

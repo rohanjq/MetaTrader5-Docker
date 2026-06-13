@@ -333,7 +333,13 @@ if [ -e "$MT5_EXE" ]; then
         # Generate tester config from YAML if available, otherwise use static .ini
         if [ -f "$DATA_DIR/config/config.yaml" ]; then
             log "[7/7] Generating tester config from config.yaml..."
-            python3 /Metatrader/gen_inputs.py "$DATA_DIR/config/config.yaml" >> "$MT5_CONFIG_DIR/tester.ini"
+            if ! python3 /Metatrader/gen_inputs.py "$DATA_DIR/config/config.yaml" >> "$MT5_CONFIG_DIR/tester.ini"; then
+                log "[7/7] ERROR: gen_inputs.py failed — check config.yaml syntax"
+                log "[7/7] Falling back to static tester.ini"
+                if [ -f "$DATA_DIR/config/tester.ini" ]; then
+                    cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
+                fi
+            fi
         elif [ -f "$DATA_DIR/config/tester.ini" ]; then
             cat "$DATA_DIR/config/tester.ini" >> "$MT5_CONFIG_DIR/tester.ini"
         else
