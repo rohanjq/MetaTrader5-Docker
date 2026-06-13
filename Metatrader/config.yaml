@@ -1,16 +1,27 @@
+# ============================================================
+# MasterTrader EA — Backtest Configuration
+# ============================================================
+# This file drives the MT5 Strategy Tester via gen_inputs.py.
+# Edit strategies here, then restart the container to re-run.
+#
+# Date format: YYYY.MM.DD
+# Period options: M1, M2, M3, M5, M10, M15, M30, H1, H4, D1
+# Model: 0=Every tick, 1=Open prices only, 2=1 min OHLC
+# ============================================================
+
 backtest:
   symbol: BTCUSDT
   period: M1
-  model: 1
-  from: "2026.06.08"
-  to: "2026.06.13"
+  model: 1                              # 1 = open prices only (fast)
+  from: "2026.06.08"                    # start date
+  to: "2026.06.13"                      # end date
   deposit: 10000
   leverage: "1:100"
 
 global:
-  risk_pct: 5.0
-  sl: 0
-  rr: 0
+  risk_pct: 5.0                         # % of account risked per trade
+  sl: 0                                 # global SL (0 = use per-strategy)
+  rr: 0                                 # global RR (0 = use per-strategy)
   magic: 300
   multi_position: false
   max_positions: 1
@@ -36,10 +47,70 @@ control:
   write_status_file: false
   control_poll_sec: 5
 
+# ============================================================
+# Strategies (up to 20 slots: S01–S20)
+# ============================================================
+# Entry signal format:
+#   indicator_timeframe.field operator value
+#   Multiple conditions joined with | means AND (all must be true)
+#
+# Available operators: ==, !=, >, <, >=, <=, in, not_in
+# Available signals (see docs/signals.md for full reference):
+#   utbot_TF.signal (BUY/SELL), .bias (BULLISH/BEARISH)
+#   rsi2_TF.zone (EXTREME_OB/OB/NEUTRAL/OS/EXTREME_OS)
+#   rsi14_TF.zone (OB/NEUTRAL/OS)
+#   stoch_TF.zone (OB/NEUTRAL/OS)
+#   adx_TF.strength (STRONG_TREND/TRENDING/WEAK_TREND/RANGING)
+#   emaX_TF.price_vs (ABOVE/BELOW), .slope (RISING/FALLING/FLAT)
+#   vwap_TF.price_vs (ABOVE/BELOW)
+#   bb_TF.squeeze (TRUE/FALSE), .reenter_below, .reenter_above
+#   macd_TF.cross (CROSS_UP/CROSS_DOWN/NONE), .hist_dir, .vs_zero
+#   dc_TF.zone (UPPER/UPPER_MID/MIDDLE/LOWER_MID/LOWER)
+#   dc_TF.upper_wick_rej, .lower_wick_rej
+#   candle_TF.is_bullish, .is_bearish, .type (DOJI/MARUBOZU etc.)
+# ============================================================
+
 strategies:
-  - name: rsi2_vwap_trend_s1
-    enabled: true
+  # --------------------------------------------------------
+  # S01 — Example: Long + Short (both directions)
+  # Enters long when stochastic oversold + uptrend aligned
+  # Enters short when stochastic overbought + downtrend aligned
+  # --------------------------------------------------------
+  - name: stoch_trend_reversal
+    enabled: false
     sl: 500.0
-    rr: 1.0
-    buy: "rsi2_M5.zone==EXTREME_OS|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING|ema200_M15.price_vs==ABOVE"
+    rr: 1.5
+    buy:  "stoch_M15.zone==OS|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING"
+    sell: "stoch_M15.zone==OB|utbot_H1.bias==BEARISH|vwap_M5.price_vs==ABOVE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING"
+
+  # --------------------------------------------------------
+  # S02 — Example: Long-only (buy signal, no sell signal)
+  # Bollinger band reentry pullback — only trades long
+  # --------------------------------------------------------
+  - name: bb_pullback_long
+    enabled: false
+    sl: 500.0
+    rr: 1.5
+    buy:  "bb_M15.reenter_below==TRUE|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE"
+    sell: ""
+
+  # --------------------------------------------------------
+  # S03 — Example: Long-only with different entry trigger
+  # RSI oversold + ADX trend confirmation
+  # --------------------------------------------------------
+  - name: rsi_adx_long
+    enabled: false
+    sl: 400.0
+    rr: 1.5
+    buy:  "rsi2_M5.zone in OS,EXTREME_OS|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING|ema200_M15.price_vs==ABOVE"
+    sell: ""
+
+  # --------------------------------------------------------
+  # S04 — Example: RSI14 long-only (wider oversold zone)
+  # --------------------------------------------------------
+  - name: rsi14_vwap_long
+    enabled: false
+    sl: 500.0
+    rr: 1.5
+    buy:  "rsi14_M15.zone in OS,NEUTRAL|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING"
     sell: ""
