@@ -1,0 +1,33 @@
+# === PROCESS CHECK ===
+podman exec mt5 ps aux | grep -i "terminal\|metatester"
+
+# === TERMINAL LOG ===
+tail -20 data/logs/terminal/$(date +%Y%m%d).log
+
+# === TESTER LOG ===
+podman exec mt5 tail -20 "/data/wine/drive_c/Program Files/PXBT Trading MT5 Terminal/Tester/logs/$(date +%Y%m%d).log"
+
+# === AGENT LOG (EA output) ===
+podman exec mt5 tail -20 "/data/wine/drive_c/Program Files/PXBT Trading MT5 Terminal/Tester/Agent-127.0.0.1-3002/logs/$(date +%Y%m%d).log"
+
+# === LIVE TAIL (pick one) ===
+tail -f data/logs/terminal/$(date +%Y%m%d).log
+podman exec mt5 tail -f "/data/wine/drive_c/Program Files/PXBT Trading MT5 Terminal/Tester/logs/$(date +%Y%m%d).log"
+podman exec mt5 tail -f "/data/wine/drive_c/Program Files/PXBT Trading MT5 Terminal/Tester/Agent-127.0.0.1-3002/logs/$(date +%Y%m%d).log"
+
+# === REPORTS ===
+ls -la data/reports/
+
+# === EA EXPERT LOG ===
+ls -la data/logs/experts/
+
+# === RUN TESTER ===
+sed -i 's/MT5_MODE=live/MT5_MODE=tester/' .env
+podman-compose down && git pull && podman-compose build --no-cache && podman-compose up
+
+# === SWITCH BACK TO LIVE ===
+sed -i 's/MT5_MODE=tester/MT5_MODE=live/' .env
+podman-compose down && podman-compose up -d
+
+# === MERGED TESTER CONFIG (verify) ===
+podman exec mt5 cat "/data/wine/drive_c/Program Files/PXBT Trading MT5 Terminal/Config/tester.ini"
