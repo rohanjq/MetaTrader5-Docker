@@ -549,17 +549,40 @@ void OnTick()
    if(!g_tradingEnabled) return;
 
    int openPos = CountOpenPositions();
-   if(!INP_MultiPosition && openPos > 0) return;
-   if(INP_MultiPosition && openPos >= INP_MaxPositions) return;
-   if(g_dailyTradeCount >= INP_MaxDailyTrades) return;
+   if(!INP_MultiPosition && openPos > 0)
+   {
+      static bool s_posCapped = false;
+      if(!s_posCapped) { Print("BLOCKED: position open, MultiPosition=false"); s_posCapped = true; }
+      return;
+   }
+   else { static bool s_posCapped = false; s_posCapped = false; }
+
+   if(INP_MultiPosition && openPos >= INP_MaxPositions)
+   {
+      static bool s_maxCapped = false;
+      if(!s_maxCapped) { PrintFormat("BLOCKED: %d/%d max positions reached", openPos, INP_MaxPositions); s_maxCapped = true; }
+      return;
+   }
+   else { static bool s_maxCapped = false; s_maxCapped = false; }
+
+   if(g_dailyTradeCount >= INP_MaxDailyTrades)
+   {
+      static bool s_dailyCapped = false;
+      if(!s_dailyCapped) { PrintFormat("BLOCKED: daily trade limit %d reached", INP_MaxDailyTrades); s_dailyCapped = true; }
+      return;
+   }
+   else { static bool s_dailyCapped = false; s_dailyCapped = false; }
 
    datetime now = TimeCurrent();
    if(now - g_lastTradeTime < INP_CooldownSec) return;
 
    if(INP_MaxConsecLoss > 0 && g_consecLosses >= INP_MaxConsecLoss)
    {
+      static bool s_consecCapped = false;
+      if(!s_consecCapped) { PrintFormat("BLOCKED: %d consec losses, pausing %ds", g_consecLosses, g_consecLosses * INP_ConsecLossPause); s_consecCapped = true; }
       if(now - g_lastTradeTime < g_consecLosses * INP_ConsecLossPause) return;
       g_consecLosses = 0;
+      s_consecCapped = false;
    }
 
    // 6. Evaluate strategies
