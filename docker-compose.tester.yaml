@@ -6,7 +6,7 @@ services:
     image: mt5-docker
     container_name: mt5-tester
     volumes:
-      - ./config:/config
+      - ./config-tester:/config
       - ./data-tester:/data
       - ./config.yaml:/data-tester/config/config.yaml
     ports:

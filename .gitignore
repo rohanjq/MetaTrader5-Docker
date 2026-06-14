@@ -3,6 +3,8 @@
 .env
 .venv/
 config/
+config-live/
+config-tester/
 config.yaml
 data/
 data-tester/

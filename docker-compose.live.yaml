@@ -6,7 +6,7 @@ services:
     image: mt5-docker
     container_name: mt5-live
     volumes:
-      - ./config:/config
+      - ./config-live:/config
       - ./data:/data
       - ./config.yaml:/data/config/config.yaml
     ports:
