@@ -175,7 +175,7 @@ Every run saves to `data/config/worker6_results.json`. Example entry:
 1. Writes `config.yaml` with one strategy and test parameters
 2. Runs `podman stop -t 5 mt5 && podman rm -f mt5`
 3. Deletes old reports from `data/reports/`
-4. Runs `MT5_MODE=tester podman-compose up -d`
+4. Runs `podman-compose -f docker-compose.tester.yaml up -d`
 5. Waits for `data/reports/backtest_report.htm` to appear and be non-empty
 6. Parses the report with `python3 tools/parse_report.py --json --all`
 7. Saves results to `data/config/worker6_results.json`

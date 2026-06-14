@@ -304,9 +304,9 @@ strategies:
 
 ### Run:
 ```bash
-podman-compose down
+podman-compose -f docker-compose.tester.yaml down
 rm -f data/reports/backtest_report*
-MT5_MODE=tester podman-compose up --build
+podman-compose -f docker-compose.tester.yaml up --build
 # Wait for "Tester run complete"
 python3 tools/parse_report.py data/reports/backtest_report.htm --human --all
 ```

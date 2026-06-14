@@ -35,11 +35,11 @@ Set `enabled: true` on the strategy(s) you want to test. All others must be `ena
 cd /root/MetaTrader5-Docker
 
 # Stop any existing container, clean reports, start fresh
-podman-compose down
+podman-compose -f docker-compose.tester.yaml down
 rm -f data/reports/backtest_report*
 
 # Run tester mode
-MT5_MODE=tester podman-compose up -d
+podman-compose -f docker-compose.tester.yaml up -d
 
 # Wait for completion (1-30 seconds depending on date range)
 while ! podman logs mt5 2>&1 | grep -q "Tester run complete"; do sleep 5; done
@@ -224,7 +224,7 @@ Machine-readable output. Combine with `-o <file>` to write to disk. With `--all 
 | Problem | Cause | Fix |
 |---|---|---|
 | No report generated | Backtest failed (market closed, login issue) | Check `podman logs mt5` for errors |
-| Report has `[N]` suffixes | Cache/stale config | `podman-compose down && rm -f data/reports/backtest_report* && MT5_MODE=tester podman-compose up -d` |
+| Report has `[N]` suffixes | Cache/stale config | `podman-compose -f docker-compose.tester.yaml down && rm -f data/reports/backtest_report* && podman-compose -f docker-compose.tester.yaml up -d` |
 | Zero trades | Entry conditions too strict | Loosen filters (add NEUTRAL to zones, remove ADX) |
 | Too many losing trades | Entry conditions too loose | Tighten filters, increase RR ratio |
 | Short trades appear with sell="" | Not a bug — confirmed guard works | Check that another strategy isn't enabled with sell signals |
@@ -246,8 +246,8 @@ For config-only changes, just restart the container — no rebuild required.
 ## Container Commands
 
 ```bash
-podman-compose down                     # stop container
-MT5_MODE=tester podman-compose up -d    # start in tester mode
+podman-compose -f docker-compose.tester.yaml down                     # stop container
+podman-compose -f docker-compose.tester.yaml up -d    # start in tester mode
 MT5_MODE=live podman-compose up -d      # start in live trading mode
 podman logs mt5                         # view logs
 podman exec -it mt5 bash                # shell into container
