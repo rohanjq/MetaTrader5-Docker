@@ -8,7 +8,7 @@ services:
     volumes:
       - ./config-tester:/config
       - ./data-tester:/data
-      - ./config.yaml:/data-tester/config/config.yaml
+      - ./config-tester.yaml:/data/config/config.yaml
     ports:
       - 3001:3000
       - 8002:8001

@@ -8,7 +8,7 @@ services:
     volumes:
       - ./config-live:/config
       - ./data:/data
-      - ./config.yaml:/data/config/config.yaml
+      - ./config-live.yaml:/data/config/config.yaml
     ports:
       - 3000:3000
       - 8001:8001

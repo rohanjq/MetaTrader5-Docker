@@ -6,6 +6,8 @@ config/
 config-live/
 config-tester/
 config.yaml
+config-live.yaml
+config-tester.yaml
 data/
 data-tester/
 __pycache__/
