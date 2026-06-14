@@ -91,7 +91,7 @@ def generate_inputs_section(cfg, live=False):
     strats = cfg.get("strategies", [])
 
     emit = emit_live_input if live else emit_input
-    lines = ["[Inputs]" if live else "[TesterInputs]"]
+    lines = [] if live else ["[TesterInputs]"]
 
     # Global Risk
     lines.append("; === Global Risk ===")
@@ -170,7 +170,7 @@ def main():
     parser.add_argument("config", help="Path to config.yaml")
     parser.add_argument("-o", "--output", default=None, help="Output file (default: stdout)")
     parser.add_argument("--inputs-only", action="store_true", help="Only output [TesterInputs] section")
-    parser.add_argument("--live", action="store_true", help="Output [Inputs] with simple key=value for live mode")
+    parser.add_argument("--live", action="store_true", help="Output .set file (key=value) for live ExpertParameters")
     args = parser.parse_args()
 
     with open(args.config) as f:

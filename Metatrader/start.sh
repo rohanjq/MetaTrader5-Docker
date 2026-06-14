@@ -178,16 +178,18 @@ EOINI
 
 [StartUp]
 Expert=$MT5_STARTUP_EA
+ExpertParameters=MasterTrader.set
 Symbol=$MT5_STARTUP_SYMBOL
 Period=$MT5_STARTUP_PERIOD
 EOSTART
     fi
 
-    # Append strategy inputs from config.yaml so live EA gets correct parameters
+    # Generate .set preset file so MT5 loads EA with correct parameters
     if [ -f "$DATA_DIR/config/config.yaml" ]; then
-        log "[5/7] Generating EA inputs from config.yaml for live mode..."
-        if python3 /Metatrader/gen_inputs.py "$DATA_DIR/config/config.yaml" --live >> "$MT5_CONFIG_DIR/auto_login.ini"; then
-            log "[5/7] EA inputs appended to auto_login.ini"
+        log "[5/7] Generating EA preset from config.yaml..."
+        mkdir -p "$MT5_MQL5_DIR/Presets"
+        if python3 /Metatrader/gen_inputs.py "$DATA_DIR/config/config.yaml" --live -o "$MT5_MQL5_DIR/Presets/MasterTrader.set"; then
+            log "[5/7] Wrote MQL5/Presets/MasterTrader.set"
         else
             log "[5/7] WARNING: gen_inputs.py failed — EA will use compiled defaults"
         fi
