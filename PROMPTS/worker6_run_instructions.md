@@ -70,7 +70,7 @@ This does two things:
 
 ## Step 4: Create Production Config (manual)
 
-Based on the output from Step 3, manually edit `data/config/config.yaml` with the best non-overlapping strategies. Template:
+Based on the output from Step 3, manually edit `config.yaml` with the best non-overlapping strategies. Template:
 
 ```yaml
 backtest:
@@ -172,7 +172,7 @@ Every run saves to `data/config/worker6_results.json`. Example entry:
 
 ### What each run does internally
 
-1. Writes `data/config/config.yaml` with one strategy and test parameters
+1. Writes `config.yaml` with one strategy and test parameters
 2. Runs `podman stop -t 5 mt5 && podman rm -f mt5`
 3. Deletes old reports from `data/reports/`
 4. Runs `MT5_MODE=tester podman-compose up -d`
@@ -206,6 +206,6 @@ Phase 2 adds 4 trailing stop variations for the best SL/RR from Phase 1.
 | `tools/run_worker6.py` | The automation runner |
 | `tools/summarize_worker6.py` | Post-run summary generator |
 | `data/config/worker6_results.json` | Running results (skip completed) |
-| `data/config/config.yaml` | Gets overwritten each run |
+| `config.yaml` | Gets overwritten each run |
 | `STRATEGY-RESULTS.md` | Final output (created by summarizer) |
 | `past_tests/MASTER_STRATEGIES.md` | Reference: original 2-month results |

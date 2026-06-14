@@ -114,7 +114,7 @@ podman-compose up   # (foreground recommended to see output)
 ```
 
 1. Reads credentials from `auto_login.ini`
-2. If `data/config/config.yaml` exists → runs `gen_inputs.py` to generate tester config
+2. If `config.yaml` exists → runs `gen_inputs.py` to generate tester config
 3. Otherwise falls back to static `tester.ini`
 4. Launches MT5 Strategy Tester
 5. Copies report to `data/reports/`

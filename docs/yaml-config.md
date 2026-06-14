@@ -4,13 +4,7 @@ The YAML config (`config.yaml`) is the primary interface for configuring the Mas
 
 ## File Location
 
-| Context | Path |
-|---|---|
-| Repo (bundled default) | `Metatrader/config.yaml` |
-| Container (runtime) | `/data/config/config.yaml` |
-| Host (edit this one) | `./data/config/config.yaml` |
-
-On first boot, the bundled default is copied to `/data/config/config.yaml`. After that, only the `/data/config/` copy is used — it's never overwritten.
+`./config.yaml` in the repo root. Mounted directly into the container at `/data/config/config.yaml` via `docker-compose.yaml`. Edit it in place — changes are live on next container start.
 
 ## Schema
 
@@ -126,14 +120,14 @@ The converter runs automatically in the container during tester mode — you don
 
 ### Backtesting
 
-1. Edit `./data/config/config.yaml` — change strategies, SL/RR, symbol, dates
+1. Edit `./config.yaml` — change strategies, SL/RR, symbol, dates
 2. Run: `MT5_MODE=tester podman-compose up`
 3. Report saved to `./data/reports/`
 4. Parse: `python3 tools/parse_report.py data/reports/backtest_report.htm --human`
 
 ### Live Trading
 
-1. Edit `./data/config/config.yaml` — enable/disable strategies, tweak SL/RR
+1. Edit `./config.yaml` — enable/disable strategies, tweak SL/RR
 2. Restart: `podman-compose restart`
 3. EA picks up new config on next startup
 

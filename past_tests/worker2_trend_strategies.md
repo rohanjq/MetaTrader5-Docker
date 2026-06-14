@@ -91,7 +91,7 @@ All strategies use the same core formula: UTBot H1 bias BULLISH + VWAP M5 price 
 - `Metatrader/tester.ini:18-20` — Same additions to static template
 - `Metatrader/start.sh:303-314` — Changed config.yaml sync from copy-once to copy-if-newer
 
-## Active Config (data/config/config.yaml)
+## Active Config (config.yaml)
 
 ```yaml
 strategies:

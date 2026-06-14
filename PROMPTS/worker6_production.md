@@ -315,7 +315,7 @@ For each of the 15 strategies, document the **best parameter combination** found
 ```
 
 ### 3. Final Production Config
-Put your recommended production portfolio in `data/config/config.yaml`:
+Put your recommended production portfolio in `config.yaml`:
 - Include **3-5 non-overlapping strategies** that work well together
 - Use the best parameters found for each
 - Use the relaxed global settings (multi_position=true, max_positions=3, cooldown=900)

@@ -210,7 +210,7 @@ For every backtest, your config should have **exactly 1 strategy enabled**. This
 
 ## Step 5: Deliverable
 
-1. Update `data/config/config.yaml` with your **single best strategy** (highest PF)
+1. Update `config.yaml` with your **single best strategy** (highest PF)
 2. Write results to `STRATEGY-RESULTS.md` with **all** strategies tested and their standalone metrics
 3. Every PF number must be from a **single-strategy backtest** (not combined)
 4. For each strategy: document expression, SL/RR/breakeven, standalone PF/WR/Trades/DD

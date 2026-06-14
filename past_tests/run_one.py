@@ -2,7 +2,7 @@
 """Quick strategy runner."""
 import yaml, subprocess, sys, time, os, re, json
 
-CONFIG = "data/config/config.yaml"
+CONFIG = "config.yaml"
 RF = "data/config/results2.json"
 
 def run_one(idx):

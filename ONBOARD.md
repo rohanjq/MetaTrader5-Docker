@@ -12,7 +12,7 @@ config.yaml  →  gen_inputs.py  →  tester.ini  →  MT5 Strategy Tester  → 
 
 | Component | Path | Purpose |
 |---|---|---|
-| Config | `data/config/config.yaml` | **The only file you edit.** Defines strategies, dates, parameters. |
+| Config | `config.yaml` | **The only file you edit.** Defines strategies, dates, parameters. |
 | Generator | `Metatrader/gen_inputs.py` | Converts YAML → MT5 `.ini` format at container startup. |
 | EA | `Metatrader/MQL5/Experts/MasterTrader.mq5` | The expert advisor running inside MT5. |
 | Parser | `tools/parse_report.py` | Reads MT5 HTML reports → JSON/CSV/human-readable. |
@@ -24,7 +24,7 @@ config.yaml  →  gen_inputs.py  →  tester.ini  →  MT5 Strategy Tester  → 
 ### 1. Edit strategy config
 
 ```bash
-nano data/config/config.yaml
+nano config.yaml
 ```
 
 Set `enabled: true` on the strategy(s) you want to test. All others must be `enabled: false`.
@@ -63,7 +63,7 @@ python3 tools/parse_report.py data/reports/backtest_report.htm --json --all -o r
 
 ---
 
-## Config File Reference (`data/config/config.yaml`)
+## Config File Reference (`config.yaml`)
 
 ### Backtest section
 
@@ -228,7 +228,6 @@ Machine-readable output. Combine with `-o <file>` to write to disk. With `--all 
 | Zero trades | Entry conditions too strict | Loosen filters (add NEUTRAL to zones, remove ADX) |
 | Too many losing trades | Entry conditions too loose | Tighten filters, increase RR ratio |
 | Short trades appear with sell="" | Not a bug — confirmed guard works | Check that another strategy isn't enabled with sell signals |
-| Stale config after rebuild | Image config newer than data config | `start.sh` syncs on `-nt` comparison; manually `cp Metatrader/config.yaml data/config/config.yaml` if needed |
 
 ---
 

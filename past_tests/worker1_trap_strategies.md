@@ -183,7 +183,7 @@ Note: Strategy priority (S01 first) means high-frequency strategies (rsi2_snap, 
 ## Supporting Scripts
 
 ### `run_one.py`
-Python script used for sequential strategy testing. Toggles one strategy enabled at a time in `data/config/config.yaml`, runs the backtest via `podman-compose up -d`, polls for completion, and parses results.
+Python script used for sequential strategy testing. Toggles one strategy enabled at a time in `config.yaml`, runs the backtest via `podman-compose up -d`, polls for completion, and parses results.
 
 Usage: `python3 run_one.py [start_index] [end_index]`
 
@@ -193,7 +193,7 @@ Results cached to `data/config/results2.json` to allow resuming after interrupti
 
 ## Final Config
 
-The final deliverable config is at `data/config/config.yaml`. It contains all 10 strategies with documentation comments showing standalone metrics. All strategies are enabled for combined testing.
+The final deliverable config is at `config.yaml`. It contains all 10 strategies with documentation comments showing standalone metrics. All strategies are enabled for combined testing.
 
 ---
 

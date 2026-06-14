@@ -2,7 +2,7 @@
 """Run backtests for one strategy at a time, log results."""
 import sys, os, subprocess, time, json, yaml
 
-CONFIG = "data/config/config.yaml"
+CONFIG = "config.yaml"
 RESULTS_FILE = "data/config/strategy_results.json"
 
 def run_backtest(strategy_idx):

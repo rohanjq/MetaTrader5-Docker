@@ -7,7 +7,7 @@ import json, os, re, subprocess, sys, time, yaml
 from pathlib import Path
 
 PROJECT_DIR = Path("/root/MetaTrader5-Docker")
-CONFIG_YAML = PROJECT_DIR / "data/config/config.yaml"
+CONFIG_YAML = PROJECT_DIR / "config.yaml"
 REPORT_DIR = PROJECT_DIR / "data/reports"
 RESULTS_JSON = PROJECT_DIR / "data/config/worker6_results.json"
 

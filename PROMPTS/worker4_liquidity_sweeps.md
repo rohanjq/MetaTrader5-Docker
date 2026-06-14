@@ -304,7 +304,7 @@ Do NOT worry about combining strategies — that is a separate step done later. 
 
 ## Deliverable
 
-1. Update `data/config/config.yaml` with your **single best strategy** (highest PF)
+1. Update `config.yaml` with your **single best strategy** (highest PF)
 2. Write results to `STRATEGY-RESULTS.md` with **all** strategies tested and their standalone metrics
 3. For each strategy: document expression, SL/RR, standalone PF/WR/Trades, liq_lookback used
 4. Every PF number must be from a **single-strategy backtest** (not combined)

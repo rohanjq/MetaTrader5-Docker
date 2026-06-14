@@ -138,7 +138,7 @@ The core insight: **markets move by trapping traders on the wrong side, then rev
 cd /root/MetaTrader5-Docker
 
 # Edit the config — set your strategy, enable ONLY that one
-nano data/config/config.yaml
+nano config.yaml
 ```
 
 ### Config structure:
@@ -343,7 +343,7 @@ round_M1.pct           → % position within the current 500-range (0=at lower, 
 
 ## Step 6: Deliverable
 
-After testing, produce a final `data/config/config.yaml` containing your best strategies (the ones with Profit Factor > 1.2 and reasonable trade count). Include ALL of them enabled so they can run together in a combined backtest.
+After testing, produce a final `config.yaml` containing your best strategies (the ones with Profit Factor > 1.2 and reasonable trade count). Include ALL of them enabled so they can run together in a combined backtest.
 
 For each strategy in the final config, add a YAML comment explaining:
 - What trap/pattern it catches

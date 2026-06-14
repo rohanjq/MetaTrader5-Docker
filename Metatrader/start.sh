@@ -306,20 +306,9 @@ if [ -f "/Metatrader/tester.ini" ]; then
     # Do NOT copy to MT5_CONFIG_DIR — it will be generated fresh from config.yaml
     log "  tester.ini synced from image → /data/config/"
 fi
-# Sync bundled config.yaml if newer (allows manual override via volume mount)
-if [ -f "/Metatrader/config.yaml" ]; then
-    if [ -f "$DATA_DIR/config/config.yaml" ]; then
-        if [ "/Metatrader/config.yaml" -nt "$DATA_DIR/config/config.yaml" ]; then
-            cp "/Metatrader/config.yaml" "$DATA_DIR/config/config.yaml"
-            log "  config.yaml updated from image → /data/config/ (image is newer)"
-        else
-            log "  config.yaml already up-to-date, keeping user's version"
-        fi
-    else
-        cp "/Metatrader/config.yaml" "$DATA_DIR/config/config.yaml"
-        log "  config.yaml synced from image → /data/config/"
-    fi
-fi
+
+# config.yaml is mounted directly from the host repo root via docker-compose
+# No sync/copy logic needed — edit ./config.yaml in your repo, it's live inside the container
 
 # ============================================================
 # [7/7] Launch MT5 terminal + rpyc server

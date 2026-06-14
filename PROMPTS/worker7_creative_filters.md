@@ -323,7 +323,7 @@ Write `STRATEGY-RESULTS.md`:
 For each of the 13 strategies, what was the best filter combination found? Document the full expression.
 
 ### 3. Final Config
-Put your top 10+ strategies (PF > 1.15) in `data/config/config.yaml`, each with best parameters.
+Put your top 10+ strategies (PF > 1.15) in `config.yaml`, each with best parameters.
 
 ### 4. Summary
 - How many strategies rescued (PF > 1.15)?

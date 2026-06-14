@@ -116,7 +116,7 @@ Result: **193 total entries = 2 buys (correct) + 191 sells (BUG)** — 99% phant
 - `model: 1` (open prices)
 - `multi_position: true`, `max_positions: 3`
 - BTCUSDT, M1 timeframe
-- Config: `data/config/config.yaml` → INI via `Metatrader/gen_inputs.py`
+- Config: `config.yaml` → INI via `Metatrader/gen_inputs.py`
 - The INI generator correctly emits `S01_Buy=` for empty strings (verified)
 
 ---
@@ -129,7 +129,7 @@ The workaround used in Worker 7 was to **always define both buy AND sell express
 ---
 
 ## Files for Reviewer
-- Config: `data/config/config.yaml` (contains BUG_both_empty config)
+- Config: `config.yaml` (contains BUG_both_empty config)
 - Report: `data/reports/backtest_report.htm` (from the both-empty test, 30 phantom trades)
 - Parser output: above JSON/CSV data
 - Worker 7 results: `STRATEGY-RESULTS.md`
