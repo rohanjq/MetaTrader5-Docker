@@ -5,6 +5,20 @@
 # ============================================================
 set -euo pipefail
 
+# ---- Validate config.yaml mount --------------------------
+CONFIG_FILE="${MT5_DATA:-/data}/config/config.yaml"
+if [ -d "$CONFIG_FILE" ]; then
+    echo "FATAL: $CONFIG_FILE is a directory, not a file."
+    echo "This happens when the host file doesn't exist and Docker/Podman auto-creates it as a dir."
+    echo "Fix: cp presets/8-aggressive-proven.yaml config-live.yaml  (or config-tester.yaml)"
+    exit 1
+fi
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "FATAL: $CONFIG_FILE not found. Mount a config.yaml into the container."
+    echo "Fix: cp presets/<preset>.yaml config-live.yaml  (or config-tester.yaml)"
+    exit 1
+fi
+
 # ---- Paths ------------------------------------------------
 DATA_DIR="${MT5_DATA:-/data}"
 DOWNLOADS_DIR="$DATA_DIR/downloads"
