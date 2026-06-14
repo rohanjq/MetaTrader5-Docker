@@ -3,6 +3,7 @@
 .env
 .venv/
 config/
+config.yaml
 data/
 __pycache__/
 *.pyc
