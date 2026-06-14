@@ -1,0 +1,23 @@
+services:
+  mt5-live:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mt5-docker
+    container_name: mt5-live
+    volumes:
+      - ./config:/config
+      - ./data:/data
+      - ./config.yaml:/data/config/config.yaml
+    ports:
+      - 3000:3000
+      - 8001:8001
+    env_file:
+      - .env
+    environment:
+      - UPDATE_PACKAGES=false
+      - MT5_MODE=live
+    security_opt:
+      - seccomp=unconfined
+      - label=disable
+    restart: unless-stopped
