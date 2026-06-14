@@ -231,15 +231,21 @@ sync_mql5_dir() {
         local filename
         filename=$(basename "$mq5_file")
         local dest_file="$dest_dir/$filename"
+        local ex5_file="${dest_file%.mq5}.ex5"
 
-        if [ ! -f "$dest_file" ] || [ "$mq5_file" -nt "$dest_file" ]; then
-            log "  Syncing $filename → $label"
-            cp "$mq5_file" "$dest_file"
+        # Always copy and recompile — MT5 caches stale input defaults
+        # in the .ex5 binary so timestamp-based skipping is unsafe
+        log "  Syncing $filename → $label"
+        cp "$mq5_file" "$dest_file"
 
-            if [ -e "$MT5_EDITOR" ]; then
-                log "  Compiling $filename..."
-                compile_mq5 "$dest_file" || true
-            fi
+        # Delete old .ex5 to force a clean build (no stale cache)
+        if [ -f "$ex5_file" ]; then
+            rm -f "$ex5_file"
+        fi
+
+        if [ -e "$MT5_EDITOR" ]; then
+            log "  Compiling $filename..."
+            compile_mq5 "$dest_file" || true
         fi
     done
 }
