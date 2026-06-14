@@ -143,6 +143,8 @@ def generate_inputs_section(cfg):
             lines.append(f"{slot}_Name={name}")
             lines.append(f"{slot}_Buy={buy_expr if buy_expr.strip() else 'NONE'}")
             lines.append(f"{slot}_Sell={sell_expr if sell_expr.strip() else 'NONE'}")
+            lines.append(emit_input(f"{slot}_CD", int(s.get("cooldown", 0))))
+            lines.append(emit_input(f"{slot}_MCL", int(s.get("max_consec_loss", 0))))
         else:
             lines.append(f"; === {slot}: (empty) ===")
             lines.append(emit_input(f"{slot}_On", False))
@@ -151,6 +153,8 @@ def generate_inputs_section(cfg):
             lines.append(f"{slot}_Name=")
             lines.append(f"{slot}_Buy=NONE")
             lines.append(f"{slot}_Sell=NONE")
+            lines.append(emit_input(f"{slot}_CD", 0))
+            lines.append(emit_input(f"{slot}_MCL", 0))
 
     return lines
 

@@ -15,7 +15,7 @@ global:
   multi_position: true
   max_positions: 3
   max_daily_trades: 50
-  cooldown_sec: 900
+  cooldown_sec: 0
   reversal_cooldown: 0
   max_consec_loss: 0
   consec_loss_pause: 0
@@ -49,6 +49,7 @@ strategies:
     rr: 2.0
     buy: "stoch_M15.zone==OS|dc_M15.lower_wick_rej==TRUE|candle_M3.is_bullish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BULLISH|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING"
     sell: "stoch_M15.zone==OB|dc_M15.upper_wick_rej==TRUE|candle_M3.is_bearish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BEARISH|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING"
+    cooldown: 2400
 
   # S02: X1 — D1 Mega Filter + Wick Rejection (PF=1.46)
   - name: x1_d1_mega_wick
@@ -57,6 +58,7 @@ strategies:
     rr: 1.5
     buy: "dc_M15.lower_wick_rej==TRUE|candle_M3.is_bullish==TRUE|candle_M3.body_pct>=50|utbot_D1.bias==BULLISH|ema200_M15.price_vs==ABOVE"
     sell: "dc_M15.upper_wick_rej==TRUE|candle_M3.is_bearish==TRUE|candle_M3.body_pct>=50|utbot_D1.bias==BEARISH|ema200_M15.price_vs==BELOW"
+    cooldown: 2400
 
   # S03: L3 — Triple Rejection + EMA200 (PF=1.46)
   - name: l3_triple_rej_ema200
@@ -65,6 +67,7 @@ strategies:
     rr: 2.5
     buy: "liq_M15.lower_swept==TRUE|bb_M15.reenter_below==TRUE|candle_M3.is_bullish==TRUE|utbot_H1.bias==BULLISH|ema200_M15.price_vs==ABOVE"
     sell: "liq_M15.upper_swept==TRUE|bb_M15.reenter_above==TRUE|candle_M3.is_bearish==TRUE|utbot_H1.bias==BEARISH|ema200_M15.price_vs==BELOW"
+    cooldown: 2400
 
   # S04: T2 — Stoch Combo No NEUTRAL + Wick (PF=1.29)
   - name: t2_stoch_wick
@@ -73,6 +76,7 @@ strategies:
     rr: 1.5
     buy: "stoch_M15.zone==OS|dc_M15.lower_wick_rej==TRUE|candle_M3.is_bullish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE"
     sell: "stoch_M15.zone==OB|dc_M15.upper_wick_rej==TRUE|candle_M3.is_bearish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BEARISH|vwap_M5.price_vs==ABOVE|ema200_M15.price_vs==BELOW"
+    cooldown: 2400
 
   # S05: T1 — VWAP Trend + Wick + ADX (PF=1.21)
   - name: t1_vwap_wick_adx
@@ -81,6 +85,7 @@ strategies:
     rr: 1.5
     buy: "vwap_M5.price_vs==BELOW|dc_M15.lower_wick_rej==TRUE|candle_M3.is_bullish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BULLISH|adx_M15.strength in STRONG_TREND,TRENDING|ema200_M15.price_vs==ABOVE"
     sell: "vwap_M5.price_vs==ABOVE|dc_M15.upper_wick_rej==TRUE|candle_M3.is_bearish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BEARISH|adx_M15.strength in STRONG_TREND,TRENDING|ema200_M15.price_vs==BELOW"
+    cooldown: 2400
 
   # S06: L2 — Sweep+Stoch+Trend Relaxed + Body (PF=1.20)
   - name: l2_sweep_stoch_trend
@@ -89,6 +94,7 @@ strategies:
     rr: 1.5
     buy: "liq_M15.lower_swept==TRUE|stoch_M15.zone==OS|candle_M3.is_bullish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BULLISH|utbot_H1.bullish_since>=3|ema200_M15.price_vs==ABOVE"
     sell: "liq_M15.upper_swept==TRUE|stoch_M15.zone==OB|candle_M3.is_bearish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BEARISH|utbot_H1.bearish_since>=3|ema200_M15.price_vs==BELOW"
+    cooldown: 2400
 
   # S07: P1 — DC Lowzone + Wick Rejection + Body (PF=1.20)
   - name: p1_dc_wick_body
@@ -97,6 +103,7 @@ strategies:
     rr: 1.5
     buy: "dc_M15.zone in LOWER,LOWER_MID|dc_M15.lower_wick_rej==TRUE|candle_M3.is_bullish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BULLISH|ema200_M15.price_vs==ABOVE"
     sell: "dc_M15.zone in UPPER,UPPER_MID|dc_M15.upper_wick_rej==TRUE|candle_M3.is_bearish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BEARISH|ema200_M15.price_vs==BELOW"
+    cooldown: 2400
 
   # S08: X3 — ATR + Wick Rejection + Body (PF=1.19)
   - name: x3_atr_wick_body
@@ -105,6 +112,7 @@ strategies:
     rr: 1.5
     buy: "atr_M15.value>=15|dc_M15.lower_wick_rej==TRUE|candle_M3.is_bullish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BULLISH|ema200_M15.price_vs==ABOVE"
     sell: "atr_M15.value>=15|dc_M15.upper_wick_rej==TRUE|candle_M3.is_bearish==TRUE|candle_M3.body_pct>=50|utbot_H1.bias==BEARISH|ema200_M15.price_vs==BELOW"
+    cooldown: 2400
 
   # S09: T3 — MACD Cross vs_zero + Body60 (PF=1.15)
   - name: t3_macd_vszero_body60
@@ -113,6 +121,7 @@ strategies:
     rr: 1.5
     buy: "macd_M15.cross==CROSS_UP|macd_M15.vs_zero==ABOVE|candle_M3.is_bullish==TRUE|candle_M3.body_pct>=60|utbot_H1.bias==BULLISH|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING"
     sell: "macd_M15.cross==CROSS_DOWN|macd_M15.vs_zero==BELOW|candle_M3.is_bearish==TRUE|candle_M3.body_pct>=60|utbot_H1.bias==BEARISH|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING"
+    cooldown: 2400
 
   # S10: X4 — Liq Sweep + D1 Mega + Body (PF=1.15)
   - name: x4_liq_d1_body
@@ -121,3 +130,4 @@ strategies:
     rr: 1.5
     buy: "liq_M15.lower_swept==TRUE|candle_M3.is_bullish==TRUE|candle_M3.body_pct>=50|utbot_D1.bias==BULLISH|ema200_M15.price_vs==ABOVE"
     sell: "liq_M15.upper_swept==TRUE|candle_M3.is_bearish==TRUE|candle_M3.body_pct>=50|utbot_D1.bias==BEARISH|ema200_M15.price_vs==BELOW"
+    cooldown: 2400

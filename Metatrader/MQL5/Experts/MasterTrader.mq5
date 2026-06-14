@@ -71,6 +71,8 @@ input double S01_RR   = 0;
 input string S01_Name = "s01";
 input string S01_Buy  = "NONE";
 input string S01_Sell = "NONE";
+input int    S01_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S01_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S02: Strategy 2 ==="
 input bool   S02_On   = false;
@@ -79,6 +81,8 @@ input double S02_RR   = 0;
 input string S02_Name = "s02";
 input string S02_Buy  = "NONE";
 input string S02_Sell = "NONE";
+input int    S02_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S02_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S03: Strategy 3 ==="
 input bool   S03_On   = false;
@@ -87,6 +91,8 @@ input double S03_RR   = 0;
 input string S03_Name = "s03";
 input string S03_Buy  = "NONE";
 input string S03_Sell = "NONE";
+input int    S03_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S03_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S04: Strategy 4 ==="
 input bool   S04_On   = false;
@@ -95,6 +101,8 @@ input double S04_RR   = 0;
 input string S04_Name = "s04";
 input string S04_Buy  = "NONE";
 input string S04_Sell = "NONE";
+input int    S04_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S04_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S05: Strategy 5 ==="
 input bool   S05_On   = false;
@@ -103,6 +111,8 @@ input double S05_RR   = 0;
 input string S05_Name = "s05";
 input string S05_Buy  = "NONE";
 input string S05_Sell = "NONE";
+input int    S05_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S05_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S06: Strategy 6 ==="
 input bool   S06_On   = false;
@@ -111,6 +121,8 @@ input double S06_RR   = 0;
 input string S06_Name = "s06";
 input string S06_Buy  = "NONE";
 input string S06_Sell = "NONE";
+input int    S06_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S06_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S07: Strategy 7 ==="
 input bool   S07_On   = false;
@@ -119,6 +131,8 @@ input double S07_RR   = 0;
 input string S07_Name = "s07";
 input string S07_Buy  = "NONE";
 input string S07_Sell = "NONE";
+input int    S07_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S07_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S08: Strategy 8 ==="
 input bool   S08_On   = false;
@@ -127,6 +141,8 @@ input double S08_RR   = 0;
 input string S08_Name = "s08";
 input string S08_Buy  = "NONE";
 input string S08_Sell = "NONE";
+input int    S08_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S08_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S09: Strategy 9 ==="
 input bool   S09_On   = false;
@@ -135,6 +151,8 @@ input double S09_RR   = 0;
 input string S09_Name = "s09";
 input string S09_Buy  = "NONE";
 input string S09_Sell = "NONE";
+input int    S09_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S09_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S10: Strategy 10 ==="
 input bool   S10_On   = false;
@@ -143,6 +161,8 @@ input double S10_RR   = 0;
 input string S10_Name = "s10";
 input string S10_Buy  = "NONE";
 input string S10_Sell = "NONE";
+input int    S10_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S10_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S11: Strategy 11 ==="
 input bool   S11_On   = false;
@@ -151,6 +171,8 @@ input double S11_RR   = 0;
 input string S11_Name = "s11";
 input string S11_Buy  = "NONE";
 input string S11_Sell = "NONE";
+input int    S11_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S11_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S12: Strategy 12 ==="
 input bool   S12_On   = false;
@@ -159,6 +181,8 @@ input double S12_RR   = 0;
 input string S12_Name = "s12";
 input string S12_Buy  = "NONE";
 input string S12_Sell = "NONE";
+input int    S12_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S12_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S13: Strategy 13 ==="
 input bool   S13_On   = false;
@@ -167,6 +191,8 @@ input double S13_RR   = 0;
 input string S13_Name = "s13";
 input string S13_Buy  = "NONE";
 input string S13_Sell = "NONE";
+input int    S13_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S13_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S14: Strategy 14 ==="
 input bool   S14_On   = false;
@@ -175,6 +201,8 @@ input double S14_RR   = 0;
 input string S14_Name = "s14";
 input string S14_Buy  = "NONE";
 input string S14_Sell = "NONE";
+input int    S14_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S14_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S15: Strategy 15 ==="
 input bool   S15_On   = false;
@@ -183,6 +211,8 @@ input double S15_RR   = 0;
 input string S15_Name = "s15";
 input string S15_Buy  = "NONE";
 input string S15_Sell = "NONE";
+input int    S15_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S15_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S16: Strategy 16 ==="
 input bool   S16_On   = false;
@@ -191,6 +221,8 @@ input double S16_RR   = 0;
 input string S16_Name = "s16";
 input string S16_Buy  = "NONE";
 input string S16_Sell = "NONE";
+input int    S16_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S16_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S17: Strategy 17 ==="
 input bool   S17_On   = false;
@@ -199,6 +231,8 @@ input double S17_RR   = 0;
 input string S17_Name = "s17";
 input string S17_Buy  = "NONE";
 input string S17_Sell = "NONE";
+input int    S17_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S17_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S18: Strategy 18 ==="
 input bool   S18_On   = false;
@@ -207,6 +241,8 @@ input double S18_RR   = 0;
 input string S18_Name = "s18";
 input string S18_Buy  = "NONE";
 input string S18_Sell = "NONE";
+input int    S18_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S18_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S19: Strategy 19 ==="
 input bool   S19_On   = false;
@@ -215,6 +251,8 @@ input double S19_RR   = 0;
 input string S19_Name = "s19";
 input string S19_Buy  = "NONE";
 input string S19_Sell = "NONE";
+input int    S19_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S19_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 input group "=== S20: Strategy 20 ==="
 input bool   S20_On   = false;
@@ -223,6 +261,8 @@ input double S20_RR   = 0;
 input string S20_Name = "s20";
 input string S20_Buy  = "NONE";
 input string S20_Sell = "NONE";
+input int    S20_CD   = 0;       // Per-strategy cooldown sec (0=use global)
+input int    S20_MCL  = 0;       // Per-strategy max consec losses (0=off)
 
 //=====================================================================
 //  SECTION 2: CONSTANTS & STRUCTURES
@@ -242,17 +282,21 @@ string g_tfNames[NUM_TF] = {
 
 struct Strategy
 {
-   string name;
-   bool   enabled;
-   double sl;
-   double rr;
-   string buyCond;
-   string sellCond;
-   int    magic;
-   int    wins;
-   int    losses;
-   int    totalTrades;
-   double pnl;
+   string   name;
+   bool     enabled;
+   double   sl;
+   double   rr;
+   string   buyCond;
+   string   sellCond;
+   int      magic;
+   int      cooldownSec;     // Per-strategy cooldown (0=use global)
+   int      maxConsecLoss;   // Per-strategy max consec losses (0=off)
+   int      consecLosses;    // Runtime: current consec loss streak
+   datetime lastTradeTime;   // Runtime: last trade time for this strategy
+   int      wins;
+   int      losses;
+   int      totalTrades;
+   double   pnl;
 };
 
 //=====================================================================
@@ -404,46 +448,50 @@ void OnDeinit(const int reason)
 void LoadStrategies()
 {
    g_stratCount = 0;
-   AddStrat(S01_Name,  S01_On, S01_SL, S01_RR, S01_Buy, S01_Sell);
-   AddStrat(S02_Name,  S02_On, S02_SL, S02_RR, S02_Buy, S02_Sell);
-   AddStrat(S03_Name,  S03_On, S03_SL, S03_RR, S03_Buy, S03_Sell);
-   AddStrat(S04_Name,  S04_On, S04_SL, S04_RR, S04_Buy, S04_Sell);
-   AddStrat(S05_Name,  S05_On, S05_SL, S05_RR, S05_Buy, S05_Sell);
-   AddStrat(S06_Name,  S06_On, S06_SL, S06_RR, S06_Buy, S06_Sell);
-   AddStrat(S07_Name,  S07_On, S07_SL, S07_RR, S07_Buy, S07_Sell);
-   AddStrat(S08_Name,  S08_On, S08_SL, S08_RR, S08_Buy, S08_Sell);
-   AddStrat(S09_Name,  S09_On, S09_SL, S09_RR, S09_Buy, S09_Sell);
-   AddStrat(S10_Name,  S10_On, S10_SL, S10_RR, S10_Buy, S10_Sell);
-   AddStrat(S11_Name,  S11_On, S11_SL, S11_RR, S11_Buy, S11_Sell);
-   AddStrat(S12_Name,  S12_On, S12_SL, S12_RR, S12_Buy, S12_Sell);
-   AddStrat(S13_Name,  S13_On, S13_SL, S13_RR, S13_Buy, S13_Sell);
-   AddStrat(S14_Name,  S14_On, S14_SL, S14_RR, S14_Buy, S14_Sell);
-   AddStrat(S15_Name,  S15_On, S15_SL, S15_RR, S15_Buy, S15_Sell);
-   AddStrat(S16_Name,  S16_On, S16_SL, S16_RR, S16_Buy, S16_Sell);
-   AddStrat(S17_Name,  S17_On, S17_SL, S17_RR, S17_Buy, S17_Sell);
-   AddStrat(S18_Name,  S18_On, S18_SL, S18_RR, S18_Buy, S18_Sell);
-   AddStrat(S19_Name,  S19_On, S19_SL, S19_RR, S19_Buy, S19_Sell);
-   AddStrat(S20_Name,  S20_On, S20_SL, S20_RR, S20_Buy, S20_Sell);
+   AddStrat(S01_Name,  S01_On, S01_SL, S01_RR, S01_Buy, S01_Sell, S01_CD, S01_MCL);
+   AddStrat(S02_Name,  S02_On, S02_SL, S02_RR, S02_Buy, S02_Sell, S02_CD, S02_MCL);
+   AddStrat(S03_Name,  S03_On, S03_SL, S03_RR, S03_Buy, S03_Sell, S03_CD, S03_MCL);
+   AddStrat(S04_Name,  S04_On, S04_SL, S04_RR, S04_Buy, S04_Sell, S04_CD, S04_MCL);
+   AddStrat(S05_Name,  S05_On, S05_SL, S05_RR, S05_Buy, S05_Sell, S05_CD, S05_MCL);
+   AddStrat(S06_Name,  S06_On, S06_SL, S06_RR, S06_Buy, S06_Sell, S06_CD, S06_MCL);
+   AddStrat(S07_Name,  S07_On, S07_SL, S07_RR, S07_Buy, S07_Sell, S07_CD, S07_MCL);
+   AddStrat(S08_Name,  S08_On, S08_SL, S08_RR, S08_Buy, S08_Sell, S08_CD, S08_MCL);
+   AddStrat(S09_Name,  S09_On, S09_SL, S09_RR, S09_Buy, S09_Sell, S09_CD, S09_MCL);
+   AddStrat(S10_Name,  S10_On, S10_SL, S10_RR, S10_Buy, S10_Sell, S10_CD, S10_MCL);
+   AddStrat(S11_Name,  S11_On, S11_SL, S11_RR, S11_Buy, S11_Sell, S11_CD, S11_MCL);
+   AddStrat(S12_Name,  S12_On, S12_SL, S12_RR, S12_Buy, S12_Sell, S12_CD, S12_MCL);
+   AddStrat(S13_Name,  S13_On, S13_SL, S13_RR, S13_Buy, S13_Sell, S13_CD, S13_MCL);
+   AddStrat(S14_Name,  S14_On, S14_SL, S14_RR, S14_Buy, S14_Sell, S14_CD, S14_MCL);
+   AddStrat(S15_Name,  S15_On, S15_SL, S15_RR, S15_Buy, S15_Sell, S15_CD, S15_MCL);
+   AddStrat(S16_Name,  S16_On, S16_SL, S16_RR, S16_Buy, S16_Sell, S16_CD, S16_MCL);
+   AddStrat(S17_Name,  S17_On, S17_SL, S17_RR, S17_Buy, S17_Sell, S17_CD, S17_MCL);
+   AddStrat(S18_Name,  S18_On, S18_SL, S18_RR, S18_Buy, S18_Sell, S18_CD, S18_MCL);
+   AddStrat(S19_Name,  S19_On, S19_SL, S19_RR, S19_Buy, S19_Sell, S19_CD, S19_MCL);
+   AddStrat(S20_Name,  S20_On, S20_SL, S20_RR, S20_Buy, S20_Sell, S20_CD, S20_MCL);
 }
 
 void AddStrat(string name, bool on, double sl, double rr,
-              string buyCond, string sellCond)
+              string buyCond, string sellCond, int cd, int mcl)
 {
    if(g_stratCount >= MAX_STRAT) return;
    int i = g_stratCount++;
-   g_strats[i].name       = name;
-   g_strats[i].enabled    = on;
-   g_strats[i].sl         = sl;
-   g_strats[i].rr         = rr;
+   g_strats[i].name          = name;
+   g_strats[i].enabled       = on;
+   g_strats[i].sl            = sl;
+   g_strats[i].rr            = rr;
    StringTrimLeft(buyCond);  StringTrimRight(buyCond);
    StringTrimLeft(sellCond); StringTrimRight(sellCond);
-   g_strats[i].buyCond    = buyCond;
-   g_strats[i].sellCond   = sellCond;
-   g_strats[i].magic      = INP_Magic + i;
-   g_strats[i].wins       = 0;
-   g_strats[i].losses     = 0;
-   g_strats[i].totalTrades = 0;
-   g_strats[i].pnl        = 0;
+   g_strats[i].buyCond       = buyCond;
+   g_strats[i].sellCond      = sellCond;
+   g_strats[i].magic         = INP_Magic + i;
+   g_strats[i].cooldownSec   = cd;
+   g_strats[i].maxConsecLoss = mcl;
+   g_strats[i].consecLosses  = 0;
+   g_strats[i].lastTradeTime = 0;
+   g_strats[i].wins          = 0;
+   g_strats[i].losses        = 0;
+   g_strats[i].totalTrades   = 0;
+   g_strats[i].pnl           = 0;
 }
 
 //=====================================================================
@@ -519,6 +567,17 @@ void OnTick()
    {
       if(!g_strats[s].enabled) continue;
 
+      // Per-strategy cooldown (falls back to global if strategy CD=0)
+      int stratCD = (g_strats[s].cooldownSec > 0) ? g_strats[s].cooldownSec : INP_CooldownSec;
+      if(now - g_strats[s].lastTradeTime < stratCD) continue;
+
+      // Per-strategy consecutive loss pause
+      if(g_strats[s].maxConsecLoss > 0 && g_strats[s].consecLosses >= g_strats[s].maxConsecLoss)
+      {
+         if(now - g_strats[s].lastTradeTime < g_strats[s].consecLosses * INP_ConsecLossPause) continue;
+         g_strats[s].consecLosses = 0;
+      }
+
       if(g_buyEnabled && StringLen(g_strats[s].buyCond) > 0
          && g_strats[s].buyCond != "NONE"
          && EvalAllConditions(g_strats[s].buyCond))
@@ -565,8 +624,8 @@ void OnTrade()
       {
          g_strats[stratIdx].totalTrades++;
          g_strats[stratIdx].pnl += profit;
-         if(profit >= 0) g_strats[stratIdx].wins++;
-         else            g_strats[stratIdx].losses++;
+         if(profit >= 0) { g_strats[stratIdx].wins++; g_strats[stratIdx].consecLosses = 0; }
+         else            { g_strats[stratIdx].losses++; g_strats[stratIdx].consecLosses++; }
       }
 
       g_totalTrades++;
@@ -1248,6 +1307,7 @@ void ExecuteTrade(int stratIdx, ENUM_ORDER_TYPE type)
       if(g_trade.Buy(lot, _Symbol, price, sl, tp, comment))
       {
          g_lastTradeTime = TimeCurrent();
+         g_strats[stratIdx].lastTradeTime = g_lastTradeTime;
          g_lastTradeDir  = 1;
          g_dailyTradeCount++;
          Print("BUY ", DoubleToString(lot, 2), " @ ", DoubleToString(price, _Digits),
@@ -1269,6 +1329,7 @@ void ExecuteTrade(int stratIdx, ENUM_ORDER_TYPE type)
       if(g_trade.Sell(lot, _Symbol, price, sl, tp, comment))
       {
          g_lastTradeTime = TimeCurrent();
+         g_strats[stratIdx].lastTradeTime = g_lastTradeTime;
          g_lastTradeDir  = -1;
          g_dailyTradeCount++;
          Print("SELL ", DoubleToString(lot, 2), " @ ", DoubleToString(price, _Digits),
