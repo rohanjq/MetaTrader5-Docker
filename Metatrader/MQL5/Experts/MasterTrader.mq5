@@ -69,160 +69,160 @@ input bool   S01_On   = false;
 input double S01_SL   = 0;
 input double S01_RR   = 0;
 input string S01_Name = "s01";
-input string S01_Buy  = "";
-input string S01_Sell = "";
+input string S01_Buy  = "NONE";
 
+input string S01_Sell = "NONE";
 input group "=== S02: Strategy 2 ==="
 input bool   S02_On   = false;
 input double S02_SL   = 0;
 input double S02_RR   = 0;
 input string S02_Name = "s02";
-input string S02_Buy  = "";
-input string S02_Sell = "";
+input string S02_Buy  = "NONE";
+input string S02_Sell = "NONE";
 
 input group "=== S03: Strategy 3 ==="
 input bool   S03_On   = false;
 input double S03_SL   = 0;
 input double S03_RR   = 0;
 input string S03_Name = "s03";
-input string S03_Buy  = "";
-input string S03_Sell = "";
+input string S03_Buy  = "NONE";
+input string S03_Sell = "NONE";
 
 input group "=== S04: Strategy 4 ==="
 input bool   S04_On   = false;
 input double S04_SL   = 0;
 input double S04_RR   = 0;
 input string S04_Name = "s04";
-input string S04_Buy  = "";
-input string S04_Sell = "";
+input string S04_Buy  = "NONE";
+input string S04_Sell = "NONE";
 
 input group "=== S05: Strategy 5 ==="
 input bool   S05_On   = false;
 input double S05_SL   = 0;
 input double S05_RR   = 0;
 input string S05_Name = "s05";
-input string S05_Buy  = "";
-input string S05_Sell = "";
+input string S05_Buy  = "NONE";
+input string S05_Sell = "NONE";
 
 input group "=== S06: Strategy 6 ==="
 input bool   S06_On   = false;
 input double S06_SL   = 0;
 input double S06_RR   = 0;
 input string S06_Name = "s06";
-input string S06_Buy  = "";
-input string S06_Sell = "";
+input string S06_Buy  = "NONE";
+input string S06_Sell = "NONE";
 
 input group "=== S07: Strategy 7 ==="
 input bool   S07_On   = false;
 input double S07_SL   = 0;
 input double S07_RR   = 0;
 input string S07_Name = "s07";
-input string S07_Buy  = "";
-input string S07_Sell = "";
+input string S07_Buy  = "NONE";
+input string S07_Sell = "NONE";
 
 input group "=== S08: Strategy 8 ==="
 input bool   S08_On   = false;
 input double S08_SL   = 0;
 input double S08_RR   = 0;
 input string S08_Name = "s08";
-input string S08_Buy  = "";
-input string S08_Sell = "";
+input string S08_Buy  = "NONE";
+input string S08_Sell = "NONE";
 
 input group "=== S09: Strategy 9 ==="
 input bool   S09_On   = false;
 input double S09_SL   = 0;
 input double S09_RR   = 0;
 input string S09_Name = "s09";
-input string S09_Buy  = "";
-input string S09_Sell = "";
+input string S09_Buy  = "NONE";
+input string S09_Sell = "NONE";
 
 input group "=== S10: Strategy 10 ==="
 input bool   S10_On   = false;
 input double S10_SL   = 0;
 input double S10_RR   = 0;
 input string S10_Name = "s10";
-input string S10_Buy  = "";
-input string S10_Sell = "";
+input string S10_Buy  = "NONE";
+input string S10_Sell = "NONE";
 
 input group "=== S11: Strategy 11 ==="
 input bool   S11_On   = false;
 input double S11_SL   = 0;
 input double S11_RR   = 0;
 input string S11_Name = "s11";
-input string S11_Buy  = "";
-input string S11_Sell = "";
+input string S11_Buy  = "NONE";
+input string S11_Sell = "NONE";
 
 input group "=== S12: Strategy 12 ==="
 input bool   S12_On   = false;
 input double S12_SL   = 0;
 input double S12_RR   = 0;
 input string S12_Name = "s12";
-input string S12_Buy  = "";
-input string S12_Sell = "";
+input string S12_Buy  = "NONE";
+input string S12_Sell = "NONE";
 
 input group "=== S13: Strategy 13 ==="
 input bool   S13_On   = false;
 input double S13_SL   = 0;
 input double S13_RR   = 0;
 input string S13_Name = "s13";
-input string S13_Buy  = "";
-input string S13_Sell = "";
+input string S13_Buy  = "NONE";
+input string S13_Sell = "NONE";
 
 input group "=== S14: Strategy 14 ==="
 input bool   S14_On   = false;
 input double S14_SL   = 0;
 input double S14_RR   = 0;
 input string S14_Name = "s14";
-input string S14_Buy  = "";
-input string S14_Sell = "";
+input string S14_Buy  = "NONE";
+input string S14_Sell = "NONE";
 
 input group "=== S15: Strategy 15 ==="
 input bool   S15_On   = false;
 input double S15_SL   = 0;
 input double S15_RR   = 0;
 input string S15_Name = "s15";
-input string S15_Buy  = "";
-input string S15_Sell = "";
+input string S15_Buy  = "NONE";
+input string S15_Sell = "NONE";
 
 input group "=== S16: Strategy 16 ==="
 input bool   S16_On   = false;
 input double S16_SL   = 0;
 input double S16_RR   = 0;
 input string S16_Name = "s16";
-input string S16_Buy  = "";
-input string S16_Sell = "";
+input string S16_Buy  = "NONE";
+input string S16_Sell = "NONE";
 
 input group "=== S17: Strategy 17 ==="
 input bool   S17_On   = false;
 input double S17_SL   = 0;
 input double S17_RR   = 0;
 input string S17_Name = "s17";
-input string S17_Buy  = "";
-input string S17_Sell = "";
+input string S17_Buy  = "NONE";
+input string S17_Sell = "NONE";
 
 input group "=== S18: Strategy 18 ==="
 input bool   S18_On   = false;
 input double S18_SL   = 0;
 input double S18_RR   = 0;
 input string S18_Name = "s18";
-input string S18_Buy  = "";
-input string S18_Sell = "";
+input string S18_Buy  = "NONE";
+input string S18_Sell = "NONE";
 
 input group "=== S19: Strategy 19 ==="
 input bool   S19_On   = false;
 input double S19_SL   = 0;
 input double S19_RR   = 0;
 input string S19_Name = "s19";
-input string S19_Buy  = "";
-input string S19_Sell = "";
+input string S19_Buy  = "NONE";
+input string S19_Sell = "NONE";
 
 input group "=== S20: Strategy 20 ==="
 input bool   S20_On   = false;
 input double S20_SL   = 0;
 input double S20_RR   = 0;
 input string S20_Name = "s20";
-input string S20_Buy  = "";
-input string S20_Sell = "";
+input string S20_Buy  = "NONE";
+input string S20_Sell = "NONE";
 
 //=====================================================================
 //  SECTION 2: CONSTANTS & STRUCTURES
@@ -520,6 +520,7 @@ void OnTick()
       if(!g_strats[s].enabled) continue;
 
       if(g_buyEnabled && StringLen(g_strats[s].buyCond) > 0
+         && g_strats[s].buyCond != "NONE"
          && EvalAllConditions(g_strats[s].buyCond))
       {
          if(g_lastTradeDir == -1 && now - g_lastTradeTime < INP_ReversalCooldown)
@@ -529,6 +530,7 @@ void OnTick()
       }
 
       if(g_sellEnabled && StringLen(g_strats[s].sellCond) > 0
+         && g_strats[s].sellCond != "NONE"
          && EvalAllConditions(g_strats[s].sellCond))
       {
          if(g_lastTradeDir == 1 && now - g_lastTradeTime < INP_ReversalCooldown)

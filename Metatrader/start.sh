@@ -339,6 +339,13 @@ if [ -e "$MT5_EXE" ]; then
             echo ""
         } > "$MT5_CONFIG_DIR/tester.ini"
 
+        # Clear MT5 EA parameter cache to prevent stale defaults from bleeding across runs
+        # MT5 stores cached EA input values in settings.ini even with /portable flag
+        if [ -f "$MT5_CONFIG_DIR/settings.ini" ]; then
+            rm -f "$MT5_CONFIG_DIR/settings.ini"
+            log "[7/7] Cleared EA parameter cache (settings.ini)"
+        fi
+
         # Generate tester config from YAML if available, otherwise use static .ini
         if [ -f "$DATA_DIR/config/config.yaml" ]; then
             log "[7/7] Generating tester config from config.yaml..."
