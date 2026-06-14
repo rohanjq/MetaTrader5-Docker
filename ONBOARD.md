@@ -12,7 +12,7 @@ config.yaml  →  gen_inputs.py  →  tester.ini  →  MT5 Strategy Tester  → 
 
 | Component | Path | Purpose |
 |---|---|---|
-| Config | `config.yaml` | **The only file you edit.** Defines strategies, dates, parameters. |
+| Config | `config-tester.yaml` / `config-live.yaml` | **The only file you edit.** Defines strategies, dates, parameters. |
 | Generator | `Metatrader/gen_inputs.py` | Converts YAML → MT5 `.ini` format at container startup. |
 | EA | `Metatrader/MQL5/Experts/MasterTrader.mq5` | The expert advisor running inside MT5. |
 | Parser | `tools/parse_report.py` | Reads MT5 HTML reports → JSON/CSV/human-readable. |
@@ -24,7 +24,9 @@ config.yaml  →  gen_inputs.py  →  tester.ini  →  MT5 Strategy Tester  → 
 ### 1. Edit strategy config
 
 ```bash
-nano config.yaml
+# Create from a preset (or edit directly)
+cp presets/7-best-tested.yaml config-tester.yaml
+nano config-tester.yaml
 ```
 
 Set `enabled: true` on the strategy(s) you want to test. All others must be `enabled: false`.

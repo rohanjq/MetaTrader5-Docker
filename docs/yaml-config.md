@@ -4,7 +4,16 @@ The YAML config (`config.yaml`) is the primary interface for configuring the Mas
 
 ## File Location
 
-`./config.yaml` in the repo root. Mounted directly into the container at `/data/config/config.yaml` via `docker-compose.yaml`. Edit it in place — changes are live on next container start.
+**Live:** `./config-live.yaml` → mounted into container at `/data/config/config.yaml`
+**Tester:** `./config-tester.yaml` → mounted into container at `/data/config/config.yaml`
+
+Both are gitignored. Create from a preset:
+```bash
+cp presets/8-aggressive-proven.yaml config-live.yaml
+cp presets/7-best-tested.yaml config-tester.yaml
+```
+
+Changes take effect on next container start.
 
 ## Schema
 
