@@ -1,0 +1,43 @@
+backtest:
+  symbol: BTCUSDT
+  period: M1
+  model: 1
+  from: 2026.01.13
+  to: 2026.06.13
+  deposit: 10000
+  leverage: 1:100
+global:
+  risk_pct: 3.0
+  sl: 0
+  rr: 0
+  magic: 300
+  multi_position: true
+  max_positions: 3
+  max_daily_trades: 50
+  cooldown_sec: 900
+  reversal_cooldown: 0
+  max_consec_loss: 0
+  consec_loss_pause: 0
+  slippage: 20
+trailing:
+  breakeven_start: 0.0
+  trail_start: 250.0
+  trail_step: 50.0
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 500.0
+  liq_lookback: 20
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+strategies:
+- name: V3_stoch_wide_sell
+  enabled: true
+  sl: 300.0
+  rr: 1.5
+  buy: ''
+  sell: stoch_M15.zone in OB,NEUTRAL|utbot_H1.bias==BEARISH|vwap_M5.price_vs==ABOVE|ema200_M15.price_vs==BELOW|adx_M15.strength
+    in STRONG_TREND,TRENDING|candle_M3.is_bearish==TRUE
