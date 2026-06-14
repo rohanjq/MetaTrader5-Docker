@@ -49,6 +49,11 @@ def emit_input(key, val):
     return f"{key}={opt_range(val)}"
 
 
+def emit_live_input(key, val):
+    """Emit a simple key=value line for live mode."""
+    return f"{key}={fmt_val(val)}"
+
+
 def generate_tester_section(cfg):
     """Generate [Tester] section from backtest config."""
     bt = cfg.get("backtest", {})
@@ -77,53 +82,54 @@ def generate_tester_section(cfg):
     return lines
 
 
-def generate_inputs_section(cfg):
-    """Generate [TesterInputs] section from config."""
+def generate_inputs_section(cfg, live=False):
+    """Generate [TesterInputs] or [Inputs] section from config."""
     g = cfg.get("global", {})
     t = cfg.get("trailing", {})
     ind = cfg.get("indicators", {})
     ctrl = cfg.get("control", {})
     strats = cfg.get("strategies", [])
 
-    lines = ["[TesterInputs]"]
+    emit = emit_live_input if live else emit_input
+    lines = ["[Inputs]" if live else "[TesterInputs]"]
 
     # Global Risk
     lines.append("; === Global Risk ===")
-    lines.append(emit_input("INP_RiskPct", g.get("risk_pct", 3.0)))
-    lines.append(emit_input("INP_GlobalSL", g.get("sl", 7.5)))
-    lines.append(emit_input("INP_GlobalRR", g.get("rr", 1.0)))
+    lines.append(emit("INP_RiskPct", g.get("risk_pct", 3.0)))
+    lines.append(emit("INP_GlobalSL", g.get("sl", 7.5)))
+    lines.append(emit("INP_GlobalRR", g.get("rr", 1.0)))
 
     # Trade Management
     lines.append("; === Trade Management ===")
-    lines.append(emit_input("INP_Magic", g.get("magic", 300)))
-    lines.append(emit_input("INP_MultiPosition", g.get("multi_position", False)))
-    lines.append(emit_input("INP_MaxPositions", g.get("max_positions", 1)))
-    lines.append(emit_input("INP_MaxDailyTrades", g.get("max_daily_trades", 15)))
-    lines.append(emit_input("INP_CooldownSec", g.get("cooldown_sec", 300)))
-    lines.append(emit_input("INP_ReversalCooldown", g.get("reversal_cooldown", 300)))
-    lines.append(emit_input("INP_MaxConsecLoss", g.get("max_consec_loss", 3)))
-    lines.append(emit_input("INP_ConsecLossPause", g.get("consec_loss_pause", 1800)))
-    lines.append(emit_input("INP_Slippage", g.get("slippage", 20)))
+    lines.append(emit("INP_Magic", g.get("magic", 300)))
+    lines.append(emit("INP_MultiPosition", g.get("multi_position", False)))
+    lines.append(emit("INP_MaxPositions", g.get("max_positions", 1)))
+    lines.append(emit("INP_MaxDailyTrades", g.get("max_daily_trades", 15)))
+    lines.append(emit("INP_CooldownSec", g.get("cooldown_sec", 300)))
+    lines.append(emit("INP_ReversalCooldown", g.get("reversal_cooldown", 300)))
+    lines.append(emit("INP_MaxConsecLoss", g.get("max_consec_loss", 3)))
+    lines.append(emit("INP_ConsecLossPause", g.get("consec_loss_pause", 1800)))
+    lines.append(emit("INP_Slippage", g.get("slippage", 20)))
 
     # Trailing Stop
     lines.append("; === Trailing Stop ===")
-    lines.append(emit_input("INP_BreakevenStart", t.get("breakeven_start", 0.0)))
-    lines.append(emit_input("INP_TrailStart", t.get("trail_start", 0.0)))
-    lines.append(emit_input("INP_TrailStep", t.get("trail_step", 2.0)))
+    lines.append(emit("INP_BreakevenStart", t.get("breakeven_start", 0.0)))
+    lines.append(emit("INP_TrailStart", t.get("trail_start", 0.0)))
+    lines.append(emit("INP_TrailStep", t.get("trail_step", 2.0)))
 
     # Indicators
     lines.append("; === Indicator Parameters ===")
-    lines.append(emit_input("INP_UTBot_Period", ind.get("utbot_period", 10)))
-    lines.append(emit_input("INP_UTBot_Mult", ind.get("utbot_mult", 2.0)))
-    lines.append(emit_input("INP_DC_Length", ind.get("dc_length", 20)))
-    lines.append(emit_input("INP_RoundLevel", ind.get("round_level", 500.0)))
-    lines.append(emit_input("INP_LiqLookback", ind.get("liq_lookback", 20)))
+    lines.append(emit("INP_UTBot_Period", ind.get("utbot_period", 10)))
+    lines.append(emit("INP_UTBot_Mult", ind.get("utbot_mult", 2.0)))
+    lines.append(emit("INP_DC_Length", ind.get("dc_length", 20)))
+    lines.append(emit("INP_RoundLevel", ind.get("round_level", 500.0)))
+    lines.append(emit("INP_LiqLookback", ind.get("liq_lookback", 20)))
 
     # External Control
     lines.append("; === External Control ===")
-    lines.append(emit_input("INP_UseControlFile", ctrl.get("use_control_file", False)))
-    lines.append(emit_input("INP_WriteStatusFile", ctrl.get("write_status_file", False)))
-    lines.append(emit_input("INP_ControlPollSec", ctrl.get("control_poll_sec", 5)))
+    lines.append(emit("INP_UseControlFile", ctrl.get("use_control_file", False)))
+    lines.append(emit("INP_WriteStatusFile", ctrl.get("write_status_file", False)))
+    lines.append(emit("INP_ControlPollSec", ctrl.get("control_poll_sec", 5)))
 
     # Strategies
     # NOTE: MT5 caches input string defaults in the .ex5 binary and ignores
@@ -137,24 +143,24 @@ def generate_inputs_section(cfg):
             buy_expr = s.get("buy", "") or ""
             sell_expr = s.get("sell", "") or ""
             lines.append(f"; === {slot}: {name} ===")
-            lines.append(emit_input(f"{slot}_On", s.get("enabled", False)))
-            lines.append(emit_input(f"{slot}_SL", float(s.get("sl", 0.0))))
-            lines.append(emit_input(f"{slot}_RR", float(s.get("rr", 0.0))))
+            lines.append(emit(f"{slot}_On", s.get("enabled", False)))
+            lines.append(emit(f"{slot}_SL", float(s.get("sl", 0.0))))
+            lines.append(emit(f"{slot}_RR", float(s.get("rr", 0.0))))
             lines.append(f"{slot}_Name={name}")
             lines.append(f"{slot}_Buy={buy_expr if buy_expr.strip() else 'NONE'}")
             lines.append(f"{slot}_Sell={sell_expr if sell_expr.strip() else 'NONE'}")
-            lines.append(emit_input(f"{slot}_CD", int(s.get("cooldown", 0))))
-            lines.append(emit_input(f"{slot}_MCL", int(s.get("max_consec_loss", 0))))
+            lines.append(emit(f"{slot}_CD", int(s.get("cooldown", 0))))
+            lines.append(emit(f"{slot}_MCL", int(s.get("max_consec_loss", 0))))
         else:
             lines.append(f"; === {slot}: (empty) ===")
-            lines.append(emit_input(f"{slot}_On", False))
-            lines.append(emit_input(f"{slot}_SL", 0.0))
-            lines.append(emit_input(f"{slot}_RR", 0.0))
+            lines.append(emit(f"{slot}_On", False))
+            lines.append(emit(f"{slot}_SL", 0.0))
+            lines.append(emit(f"{slot}_RR", 0.0))
             lines.append(f"{slot}_Name=")
             lines.append(f"{slot}_Buy=NONE")
             lines.append(f"{slot}_Sell=NONE")
-            lines.append(emit_input(f"{slot}_CD", 0))
-            lines.append(emit_input(f"{slot}_MCL", 0))
+            lines.append(emit(f"{slot}_CD", 0))
+            lines.append(emit(f"{slot}_MCL", 0))
 
     return lines
 
@@ -164,6 +170,7 @@ def main():
     parser.add_argument("config", help="Path to config.yaml")
     parser.add_argument("-o", "--output", default=None, help="Output file (default: stdout)")
     parser.add_argument("--inputs-only", action="store_true", help="Only output [TesterInputs] section")
+    parser.add_argument("--live", action="store_true", help="Output [Inputs] with simple key=value for live mode")
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -177,9 +184,9 @@ def main():
         sys.exit(f"ERROR: {args.config} missing 'strategies' or 'global' keys — is this a YAML config file?")
 
     lines = []
-    if not args.inputs_only:
+    if not args.inputs_only and not args.live:
         lines.extend(generate_tester_section(cfg))
-    lines.extend(generate_inputs_section(cfg))
+    lines.extend(generate_inputs_section(cfg, live=args.live))
 
     output = "\n".join(lines) + "\n"
 
