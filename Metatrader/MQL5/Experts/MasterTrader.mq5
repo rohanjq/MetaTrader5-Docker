@@ -435,6 +435,8 @@ void AddStrat(string name, bool on, double sl, double rr,
    g_strats[i].enabled    = on;
    g_strats[i].sl         = sl;
    g_strats[i].rr         = rr;
+   StringTrimLeft(buyCond);  StringTrimRight(buyCond);
+   StringTrimLeft(sellCond); StringTrimRight(sellCond);
    g_strats[i].buyCond    = buyCond;
    g_strats[i].sellCond   = sellCond;
    g_strats[i].magic      = INP_Magic + i;
@@ -1201,14 +1203,16 @@ bool EvalAllConditions(string conditions)
    string parts[];
    StringSplit(conditions, '|', parts);
 
+   int evaluated = 0;
    for(int i = 0; i < ArraySize(parts); i++)
    {
       string cond = parts[i];
       StringTrimLeft(cond); StringTrimRight(cond);
       if(StringLen(cond) == 0) continue;
+      evaluated++;
       if(!EvalCondition(cond)) return false;
    }
-   return true;
+   return (evaluated > 0);
 }
 
 //=====================================================================
