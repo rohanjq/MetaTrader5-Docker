@@ -70,8 +70,8 @@ input double S01_SL   = 0;
 input double S01_RR   = 0;
 input string S01_Name = "s01";
 input string S01_Buy  = "NONE";
-
 input string S01_Sell = "NONE";
+
 input group "=== S02: Strategy 2 ==="
 input bool   S02_On   = false;
 input double S02_SL   = 0;

@@ -126,26 +126,31 @@ def generate_inputs_section(cfg):
     lines.append(emit_input("INP_ControlPollSec", ctrl.get("control_poll_sec", 5)))
 
     # Strategies
+    # NOTE: MT5 caches input string defaults in the .ex5 binary and ignores
+    # empty INI overrides. Use "NONE" sentinel instead of "" to ensure
+    # unused slots/directions are properly disabled at runtime.
     for i in range(MAX_STRATEGIES):
         slot = f"S{i+1:02d}"
         if i < len(strats):
             s = strats[i]
             name = s.get("name", "custom")
+            buy_expr = s.get("buy", "") or ""
+            sell_expr = s.get("sell", "") or ""
             lines.append(f"; === {slot}: {name} ===")
             lines.append(emit_input(f"{slot}_On", s.get("enabled", False)))
             lines.append(emit_input(f"{slot}_SL", float(s.get("sl", 0.0))))
             lines.append(emit_input(f"{slot}_RR", float(s.get("rr", 0.0))))
             lines.append(f"{slot}_Name={name}")
-            lines.append(f"{slot}_Buy={s.get('buy', '')}")
-            lines.append(f"{slot}_Sell={s.get('sell', '')}")
+            lines.append(f"{slot}_Buy={buy_expr if buy_expr.strip() else 'NONE'}")
+            lines.append(f"{slot}_Sell={sell_expr if sell_expr.strip() else 'NONE'}")
         else:
             lines.append(f"; === {slot}: (empty) ===")
             lines.append(emit_input(f"{slot}_On", False))
             lines.append(emit_input(f"{slot}_SL", 0.0))
             lines.append(emit_input(f"{slot}_RR", 0.0))
             lines.append(f"{slot}_Name=")
-            lines.append(f"{slot}_Buy=")
-            lines.append(f"{slot}_Sell=")
+            lines.append(f"{slot}_Buy=NONE")
+            lines.append(f"{slot}_Sell=NONE")
 
     return lines
 
