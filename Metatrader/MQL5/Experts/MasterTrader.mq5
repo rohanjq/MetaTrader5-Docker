@@ -567,6 +567,9 @@ void OnTick()
    {
       if(!g_strats[s].enabled) continue;
 
+      // Skip if this strategy already has an open position
+      if(HasOpenPosition(g_strats[s].magic)) continue;
+
       // Per-strategy cooldown (falls back to global if strategy CD=0)
       int stratCD = (g_strats[s].cooldownSec > 0) ? g_strats[s].cooldownSec : INP_CooldownSec;
       if(now - g_strats[s].lastTradeTime < stratCD) continue;
@@ -1450,6 +1453,18 @@ int CountOpenPositions()
       if(IsOurMagic(PositionGetInteger(POSITION_MAGIC))) count++;
    }
    return count;
+}
+
+bool HasOpenPosition(int magic)
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0) continue;
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+      if(PositionGetInteger(POSITION_MAGIC) == magic) return true;
+   }
+   return false;
 }
 
 //=====================================================================
