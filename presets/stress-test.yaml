@@ -1,0 +1,76 @@
+# Stress Test — Maximum trade frequency for system verification
+# NOT for real trading. Loose filters, short cooldowns, high daily limit.
+# Use on demo account only to verify EA is taking trades correctly.
+
+backtest:
+  symbol: BTCUSDT
+  period: M1
+  model: 1
+  from: "2026.06.08"
+  to: "2026.06.13"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 1.0
+  sl: 0
+  rr: 0
+  magic: 300
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 100
+  cooldown_sec: 60
+  reversal_cooldown: 60
+  max_consec_loss: 0
+  consec_loss_pause: 0
+  slippage: 20
+
+trailing:
+  breakeven_start: 0.0
+  trail_start: 0.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 500.0
+  liq_lookback: 20
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # S01 — Loose VWAP trend (2 conditions, fires constantly)
+  - name: vwap_loose
+    enabled: true
+    sl: 300.0
+    rr: 1.0
+    buy: "vwap_M5.price_vs==BELOW|candle_M3.is_bullish==TRUE"
+    sell: "vwap_M5.price_vs==ABOVE|candle_M3.is_bearish==TRUE"
+
+  # S02 — UT Bot signal (fires on every bias flip)
+  - name: utbot_flip
+    enabled: true
+    sl: 300.0
+    rr: 1.0
+    buy: "utbot_M15.bias==BULLISH|candle_M5.is_bullish==TRUE"
+    sell: "utbot_M15.bias==BEARISH|candle_M5.is_bearish==TRUE"
+
+  # S03 — EMA slope (fires in any trending market)
+  - name: ema_slope
+    enabled: true
+    sl: 300.0
+    rr: 1.0
+    buy: "ema9_M15.slope==RISING|ema21_M15.price_vs==ABOVE"
+    sell: "ema9_M15.slope==FALLING|ema21_M15.price_vs==BELOW"
+
+  # S04 — MACD above/below zero (very loose)
+  - name: macd_zero
+    enabled: true
+    sl: 300.0
+    rr: 1.0
+    buy: "macd_M15.vs_zero==ABOVE|candle_M3.is_bullish==TRUE"
+    sell: "macd_M15.vs_zero==BELOW|candle_M3.is_bearish==TRUE"
