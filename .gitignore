@@ -5,6 +5,7 @@
 config/
 config.yaml
 data/
+data-tester/
 __pycache__/
 *.pyc
 *.ex5
