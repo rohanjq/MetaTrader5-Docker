@@ -1,0 +1,71 @@
+# 4 Example Strategies — Template/starting point
+# These are basic examples, not heavily tested. Good for learning the config format.
+
+backtest:
+  symbol: BTCUSDT
+  period: M1
+  model: 1
+  from: "2026.04.13"
+  to: "2026.06.13"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 3.0
+  sl: 0
+  rr: 0
+  magic: 300
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 50
+  cooldown_sec: 300
+  reversal_cooldown: 300
+  max_consec_loss: 5
+  consec_loss_pause: 900
+  slippage: 20
+
+trailing:
+  breakeven_start: 0.0
+  trail_start: 0.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 500.0
+  liq_lookback: 20
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  - name: stoch_trend_reversal
+    enabled: true
+    sl: 500.0
+    rr: 1.5
+    buy:  "stoch_M15.zone==OS|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING"
+    sell: "stoch_M15.zone==OB|utbot_H1.bias==BEARISH|vwap_M5.price_vs==ABOVE|ema200_M15.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING"
+
+  - name: bb_pullback_long
+    enabled: true
+    sl: 500.0
+    rr: 1.5
+    buy:  "bb_M15.reenter_below==TRUE|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE"
+    sell: ""
+
+  - name: rsi_adx_long
+    enabled: true
+    sl: 400.0
+    rr: 1.5
+    buy:  "rsi2_M5.zone in OS,EXTREME_OS|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|adx_M15.strength in STRONG_TREND,TRENDING|ema200_M15.price_vs==ABOVE"
+    sell: ""
+
+  - name: rsi14_vwap_long
+    enabled: true
+    sl: 500.0
+    rr: 1.5
+    buy:  "rsi14_M15.zone in OS,NEUTRAL|utbot_H1.bias==BULLISH|vwap_M5.price_vs==BELOW|ema200_M15.price_vs==ABOVE|adx_M15.strength in STRONG_TREND,TRENDING"
+    sell: ""

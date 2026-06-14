@@ -1,0 +1,148 @@
+# 12 Research Strategies — From deep research (worker8 prompt)
+# Sourced from GitHub repos, TradingView scripts, community strategies.
+# All untested — baseline SL=400, RR=1.0. Test one at a time.
+
+backtest:
+  symbol: BTCUSDT
+  period: M1
+  model: 1
+  from: "2026.01.13"
+  to: "2026.06.13"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 3.0
+  sl: 0
+  rr: 0
+  magic: 300
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 50
+  cooldown_sec: 300
+  reversal_cooldown: 300
+  max_consec_loss: 5
+  consec_loss_pause: 900
+  slippage: 20
+
+trailing:
+  breakeven_start: 0.0
+  trail_start: 0.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 500.0
+  liq_lookback: 20
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # --- MEAN REVERSION ---
+
+  # MR1: Connors RSI2 Pullback (Jesse bot)
+  - name: mr1_connors_rsi2
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "ema200_H1.price_vs==ABOVE|ema200_H1.slope==RISING|rsi2_M15.zone in EXTREME_OS,OS|candle_M5.is_bullish==TRUE"
+    sell: "ema200_H1.price_vs==BELOW|ema200_H1.slope==FALLING|rsi2_M15.zone in EXTREME_OB,OB|candle_M5.is_bearish==TRUE"
+
+  # MR2: IFR2 Crypto Trend Rebound (Jesse IFR2)
+  - name: mr2_ifr2_trend_rebound
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "ema200_H4.price_vs==ABOVE|adx_H1.strength in TRENDING,STRONG_TREND|rsi2_M5.zone in EXTREME_OS,OS|dc_M5.lower_wick_rej==TRUE|candle_M5.is_bullish==TRUE"
+    sell: "ema200_H4.price_vs==BELOW|adx_H1.strength in TRENDING,STRONG_TREND|rsi2_M5.zone in EXTREME_OB,OB|dc_M5.upper_wick_rej==TRUE|candle_M5.is_bearish==TRUE"
+
+  # MR3: Bollinger RSI Range Reversion (NinjaTrader BTC)
+  - name: mr3_bb_rsi_range
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "adx_H1.strength in RANGING,WEAK_TREND|bb_M15.reenter_below==TRUE|rsi14_M15.zone==OS|candle_M5.is_bullish==TRUE"
+    sell: "adx_H1.strength in RANGING,WEAK_TREND|bb_M15.reenter_above==TRUE|rsi14_M15.zone==OB|candle_M5.is_bearish==TRUE"
+
+  # MR4: Score-Based Scalper Stack (msolomos BTC bot)
+  - name: mr4_score_scalper
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "vwap_M5.price_vs==ABOVE|macd_M5.cross==CROSS_UP|stoch_M5.zone==OS|rsi14_M5.value<45|adx_M15.di_bias==BULLISH|bb_M5.reenter_below==TRUE"
+    sell: "vwap_M5.price_vs==BELOW|macd_M5.cross==CROSS_DOWN|stoch_M5.zone==OB|rsi14_M5.value>55|adx_M15.di_bias==BEARISH|bb_M5.reenter_above==TRUE"
+
+  # --- TREND & PULLBACK ---
+
+  # TP1: EMA RSI ADX Trend Confirmation (TradingView)
+  - name: tp1_ema_rsi_adx
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "ema9_M15.price_vs==ABOVE|ema21_M15.price_vs==ABOVE|ema9_M15.slope==RISING|rsi14_M15.value>55|adx_H1.strength in TRENDING,STRONG_TREND|adx_H1.di_bias==BULLISH"
+    sell: "ema9_M15.price_vs==BELOW|ema21_M15.price_vs==BELOW|ema9_M15.slope==FALLING|rsi14_M15.value<45|adx_H1.strength in TRENDING,STRONG_TREND|adx_H1.di_bias==BEARISH"
+
+  # TP2: Stochastic Momentum + EMA Filter (TradingView Pine)
+  - name: tp2_stoch_momentum
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "ema9_H1.price_vs==ABOVE|ema50_H1.slope==RISING|stoch_M30.zone==OS|macd_M30.hist_dir==RISING|candle_M15.is_bullish==TRUE"
+    sell: "ema9_H1.price_vs==BELOW|ema50_H1.slope==FALLING|stoch_M30.zone==OB|macd_M30.hist_dir==FALLING|candle_M15.is_bearish==TRUE"
+
+  # TP3: Anwar Higher-TF Pullback Rider (TradingView)
+  - name: tp3_anwar_pullback
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "ema50_H1.price_vs==ABOVE|ema200_H4.price_vs==ABOVE|adx_H1.strength in TRENDING,STRONG_TREND|dc_M15.zone in LOWER_MID,MIDDLE|candle_M15.is_bullish==TRUE"
+    sell: "ema50_H1.price_vs==BELOW|ema200_H4.price_vs==BELOW|adx_H1.strength in TRENDING,STRONG_TREND|dc_M15.zone in UPPER_MID,MIDDLE|candle_M15.is_bearish==TRUE"
+
+  # --- BREAKOUT & EXPANSION ---
+
+  # BO1: Turtle-Style Donchian Breakout (Jesse Turtle Rules)
+  - name: bo1_turtle_breakout
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "ema200_H4.price_vs==ABOVE|dc_H1.zone==UPPER|adx_H1.strength in TRENDING,STRONG_TREND|macd_H1.vs_zero==ABOVE"
+    sell: "ema200_H4.price_vs==BELOW|dc_H1.zone==LOWER|adx_H1.strength in TRENDING,STRONG_TREND|macd_H1.vs_zero==BELOW"
+
+  # BO2: UT Bot MACD Squeeze Expansion (TradingView BTC Scalping)
+  - name: bo2_squeeze_expansion
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "utbot_M15.bias==BULLISH|bb_M3.squeeze==TRUE|macd_M3.cross==CROSS_UP|macd_M3.vs_zero==ABOVE|candle_M3.is_bullish==TRUE"
+    sell: "utbot_M15.bias==BEARISH|bb_M3.squeeze==TRUE|macd_M3.cross==CROSS_DOWN|macd_M3.vs_zero==BELOW|candle_M3.is_bearish==TRUE"
+
+  # BO3: VWAP Pulse Breakout (TradingView)
+  - name: bo3_vwap_pulse
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "vwap_M15.price_vs==ABOVE|adx_M15.strength in TRENDING,STRONG_TREND|adx_M15.di_bias==BULLISH|dc_M5.zone in UPPER_MID,UPPER|macd_M5.cross==CROSS_UP"
+    sell: "vwap_M15.price_vs==BELOW|adx_M15.strength in TRENDING,STRONG_TREND|adx_M15.di_bias==BEARISH|dc_M5.zone in LOWER_MID,LOWER|macd_M5.cross==CROSS_DOWN"
+
+  # --- CONFLUENCE & LIQUIDITY ---
+
+  # CL1: VWAP + Higher-TF RSI Alignment (TradingView)
+  - name: cl1_vwap_rsi_align
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "vwap_M15.price_vs==ABOVE|rsi14_H1.value>50|rsi14_M15.zone==NEUTRAL|utbot_M15.bias==BULLISH|macd_M15.vs_zero==ABOVE"
+    sell: "vwap_M15.price_vs==BELOW|rsi14_H1.value<50|rsi14_M15.zone==NEUTRAL|utbot_M15.bias==BEARISH|macd_M15.vs_zero==BELOW"
+
+  # CL2: Liquidity Sweep Reversal (TradingView Liquidity Sweeper)
+  - name: cl2_liq_sweep_reversal
+    enabled: true
+    sl: 400.0
+    rr: 1.0
+    buy: "utbot_H1.bias==BULLISH|liq_M5.lower_swept==TRUE|dc_M5.lower_wick_rej==TRUE|candle_M5.type==HAMMER|candle_M5.is_bullish==TRUE"
+    sell: "utbot_H1.bias==BEARISH|liq_M5.upper_swept==TRUE|dc_M5.upper_wick_rej==TRUE|candle_M5.type==SHOOTING_STAR|candle_M5.is_bearish==TRUE"
