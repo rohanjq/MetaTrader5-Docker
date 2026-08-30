@@ -1,0 +1,83 @@
+# Worker 10 — GOLD (XAUUSD) Best Aggressive Scalping Portfolio
+# Tested: 2026.01.13 - 2026.06.13 (5 months)
+#
+# Standalone PF (each tested solo with trailing):
+#   g2_utbot_trail        — PF=1.17  | 7896t | 63.5% WR | 15.7% DD
+#   g4s_rsi2_short_trail  — PF=1.16  |  834t | 62.8% WR | 13.6% DD
+#   ls1c_sweep_stoch      — PF=1.21  |  491t | 63.5% WR | 10.9% DD
+#   ls3_triple_rejection  — PF=1.21  |  522t | 62.8% WR | 12.6% DD
+#
+# Combined PF (LS1c + G4s): 1.12 | 1145t | 62.3% WR | 16.0% DD
+
+backtest:
+  symbol: XAUUSD
+  period: M1
+  model: 1
+  from: "2026.01.13"
+  to: "2026.06.13"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 1.0
+  sl: 0
+  rr: 0
+  magic: 740
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 150
+  cooldown_sec: 0
+  reversal_cooldown: 60
+  max_consec_loss: 0
+  consec_loss_pause: 0
+  slippage: 20
+
+trailing:
+  breakeven_start: 5.0
+  trail_start: 8.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 50.0
+  liq_swing_period: 14
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  - name: g2_utbot_trail
+    enabled: true
+    sl: 8.0
+    rr: 2.0
+    cooldown: 900
+    buy: "utbot_M3.bearish_since>=5|candle_M3.is_bullish==TRUE"
+    sell: "utbot_M3.bullish_since>=5|candle_M3.is_bearish==TRUE"
+
+  - name: g4s_rsi2_short_trail
+    enabled: true
+    sl: 8.0
+    rr: 2.0
+    cooldown: 900
+    buy: ""
+    sell: "rsi2_M1.value>85|rsi2_M1.value<100|candle_M1.is_bearish==TRUE"
+
+  - name: ls1c_sweep_stoch
+    enabled: true
+    sl: 8.0
+    rr: 2.0
+    cooldown: 900
+    buy: "liq_M5.lower_swept==TRUE|stoch_M5.zone==OS|candle_M1.is_bullish==TRUE"
+    sell: "liq_M5.upper_swept==TRUE|stoch_M5.zone==OB|candle_M1.is_bearish==TRUE"
+
+  - name: ls3_triple_rejection
+    enabled: true
+    sl: 8.0
+    rr: 2.0
+    cooldown: 900
+    buy: "liq_M5.lower_swept==TRUE|bb_M3.reenter_below==TRUE|candle_M1.is_bullish==TRUE"
+    sell: "liq_M5.upper_swept==TRUE|bb_M3.reenter_above==TRUE|candle_M1.is_bearish==TRUE"

@@ -1,0 +1,75 @@
+backtest:
+  symbol: XAUUSD
+  period: M1
+  model: 1
+  from: "2026.06.14"
+  to: "2026.06.16"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 1.0
+  sl: 0
+  rr: 0
+  magic: 740
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 150
+  cooldown_sec: 0
+  reversal_cooldown: 60
+  max_consec_loss: 0
+  consec_loss_pause: 0
+  slippage: 20
+
+trailing:
+  breakeven_start: 0.0
+  trail_start: 0.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 50.0
+  liq_swing_period: 14
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # --- S01: LIQ SWEEP M1 + UT BOT ALIGNED BUY ---
+  # Price swept below swing low, UT Bot M10 bullish confirms trend direction,
+  # ATR15 bounded, bullish candle. UT Bot bullish_since has no ceiling.
+  - name: liq_sweep_utbot_buy
+    enabled: true
+    sl: 8.0
+    rr: 1.0
+    buy: "atr_M15.value<12|liq_M1.lower_swept==TRUE|utbot_M10.bias==BULLISH|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # --- S02: LIQ SWEEP M1 + UT BOT ALIGNED SELL ---
+  - name: liq_sweep_utbot_sell
+    enabled: true
+    sl: 8.0
+    rr: 1.0
+    buy: ""
+    sell: "atr_M15.value<12|liq_M1.upper_swept==TRUE|utbot_M10.bias==BEARISH|candle_M1.is_bearish==TRUE"
+
+  # --- S03: LIQ SWEEP M1 + RECENT UT BOT FLIP BUY ---
+  # Stronger: UT Bot flipped bullish within last 10 bars (fresh signal)
+  - name: liq_sweep_fresh_buy
+    enabled: true
+    sl: 8.0
+    rr: 1.0
+    buy: "atr_M15.value<12|liq_M1.lower_swept==TRUE|utbot_M10.bullish_since<=10|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # --- S04: LIQ SWEEP M1 + RECENT UT BOT FLIP SELL ---
+  - name: liq_sweep_fresh_sell
+    enabled: true
+    sl: 8.0
+    rr: 1.0
+    buy: ""
+    sell: "atr_M15.value<12|liq_M1.upper_swept==TRUE|utbot_M10.bearish_since<=10|candle_M1.is_bearish==TRUE"

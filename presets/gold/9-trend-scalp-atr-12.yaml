@@ -1,0 +1,109 @@
+backtest:
+  symbol: XAUUSD
+  period: M1
+  model: 1
+  from: "2026.06.14"
+  to: "2026.06.16"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 1.0
+  sl: 0
+  rr: 0
+  magic: 740
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 150
+  cooldown_sec: 0
+  reversal_cooldown: 60
+  max_consec_loss: 0
+  consec_loss_pause: 0
+  slippage: 20
+
+trailing:
+  breakeven_start: 0.0
+  trail_start: 0.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 50.0
+  liq_swing_period: 14
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # --- S01: TREND FOLLOW SELL (ADX trending + ATR bounded) ---
+  # Sell when: MARKET IS NOT RANGING (ADX>=25), LOW VOL (ATR15<12),
+  #   price below EMA9, bearish candle = trend continuation
+  # Exit: SL=12, TP=6 (RR=0.5)
+  - name: ema9_trend_sell
+    enabled: true
+    sl: 12.0
+    rr: 0.5
+    buy: ""
+    sell: "adx_M5.strength in TRENDING,STRONG_TREND|atr_M15.value<12|ema9_M5.price_vs==BELOW|candle_M1.is_bearish==TRUE"
+
+  # --- S02: TREND FOLLOW BUY (ADX trending + ATR bounded) ---
+  - name: ema9_trend_buy
+    enabled: true
+    sl: 12.0
+    rr: 0.5
+    buy: "adx_M5.strength in TRENDING,STRONG_TREND|atr_M15.value<12|ema9_M5.price_vs==ABOVE|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # --- S03: EMA9 SLOPE SELL (momentum confirmation) ---
+  # EMA9 is actively falling + ATR bounded = strong short-term downtrend
+  - name: ema9_slope_sell
+    enabled: true
+    sl: 12.0
+    rr: 0.5
+    buy: ""
+    sell: "adx_M5.strength in TRENDING,STRONG_TREND|atr_M15.value<12|ema9_M5.price_vs==BELOW|ema9_M5.slope==FALLING"
+
+  # --- S04: EMA9 SLOPE BUY ---
+  - name: ema9_slope_buy
+    enabled: true
+    sl: 12.0
+    rr: 0.5
+    buy: "adx_M5.strength in TRENDING,STRONG_TREND|atr_M15.value<12|ema9_M5.price_vs==ABOVE|ema9_M5.slope==RISING"
+    sell: ""
+
+  # --- S05: STRONG BEAR CANDLE CONTINUATION ---
+  - name: strong_bear_cont_sell
+    enabled: true
+    sl: 10.0
+    rr: 0.5
+    buy: ""
+    sell: "adx_M5.strength in TRENDING,STRONG_TREND|atr_M15.value<12|candle_M1.is_bearish==TRUE|candle_M1.body_pct>=80"
+
+  # --- S06: STRONG BULL CANDLE CONTINUATION ---
+  - name: strong_bull_cont_buy
+    enabled: true
+    sl: 10.0
+    rr: 0.5
+    buy: "adx_M5.strength in TRENDING,STRONG_TREND|atr_M15.value<12|candle_M1.is_bullish==TRUE|candle_M1.body_pct>=80"
+    sell: ""
+
+  # --- S07: BREAKOUT FOLLOW SELL ---
+  # Price breaks through 5-bar low + bearish + trend = momentum continuation
+  - name: breakout_follow_sell
+    enabled: true
+    sl: 10.0
+    rr: 0.5
+    buy: ""
+    sell: "adx_M5.strength in TRENDING,STRONG_TREND|atr_M15.value<12|candle_M1.is_bearish==TRUE|ema9_M5.price_vs==BELOW"
+
+  # --- S08: BREAKOUT FOLLOW BUY ---
+  - name: breakout_follow_buy
+    enabled: true
+    sl: 10.0
+    rr: 0.5
+    buy: "adx_M5.strength in TRENDING,STRONG_TREND|atr_M15.value<12|candle_M1.is_bullish==TRUE|ema9_M5.price_vs==ABOVE"
+    sell: ""

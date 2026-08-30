@@ -434,12 +434,17 @@ server = ThreadedServer(rpyc.ClassicService, hostname='0.0.0.0', port=$RPYC_PORT
 server.start()
 " &
 
-    sleep 5
-    if ss -tuln | grep -q ":$RPYC_PORT"; then
-        log "[7/7] rpyc server running on port $RPYC_PORT"
-    else
-        log "[7/7] WARNING: rpyc server failed to start on port $RPYC_PORT"
-    fi
+    # Wait up to 60s for rpyc to come up (Wine Python takes time to boot)
+    for i in $(seq 1 12); do
+        sleep 5
+        if timeout 2 bash -c "echo > /dev/tcp/127.0.0.1/$RPYC_PORT" 2>/dev/null; then
+            log "[7/7] rpyc server running on port $RPYC_PORT"
+            break
+        fi
+        if [ "$i" -eq 12 ]; then
+            log "[7/7] WARNING: rpyc server failed to start on port $RPYC_PORT"
+        fi
+    done
 fi
 
 log "Startup complete."

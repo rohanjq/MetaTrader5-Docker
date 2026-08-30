@@ -56,7 +56,7 @@ indicators:
   utbot_mult: 2.0
   dc_length: 20
   round_level: 500.0          # Round number interval (500 for BTC)
-  liq_lookback: 20            # Liquidity sweep: swing point lookback bars
+  liq_swing_period: 14          # Liquidity swing: pivot lookback (bars each side)
 
 # --- External control (live mode only) ---
 control:

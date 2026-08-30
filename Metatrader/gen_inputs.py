@@ -123,7 +123,7 @@ def generate_inputs_section(cfg, live=False):
     lines.append(emit("INP_UTBot_Mult", ind.get("utbot_mult", 2.0)))
     lines.append(emit("INP_DC_Length", ind.get("dc_length", 20)))
     lines.append(emit("INP_RoundLevel", ind.get("round_level", 500.0)))
-    lines.append(emit("INP_LiqLookback", ind.get("liq_lookback", 20)))
+    lines.append(emit("INP_LiqSwingPeriod", ind.get("liq_swing_period", 14)))
 
     # External Control
     lines.append("; === External Control ===")

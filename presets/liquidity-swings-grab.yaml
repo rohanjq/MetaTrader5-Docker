@@ -1,0 +1,76 @@
+# Liquidity Swings Grab Strategy
+# Uses lswing_TF grab signals (wick/body ratio > 0.5 at swing levels)
+# Best results from 108-day backtest on XAUUSD (Apr-Jun 2026)
+backtest:
+  symbol: XAUUSD
+  period: M1
+  model: 1
+  from: "2026.04.01"
+  to: "2026.06.16"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 1.0
+  sl: 0
+  rr: 0
+  magic: 740
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 150
+  cooldown_sec: 0
+  reversal_cooldown: 60
+  max_consec_loss: 0
+  consec_loss_pause: 0
+  slippage: 20
+
+trailing:
+  breakeven_start: 0.0
+  trail_start: 0.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 50.0
+  liq_swing_period: 14
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # M5 grab sell + M3 UT Bot trend → Best performer: 107T, 43.9% WR, +$5,246
+  - name: p1_grab_sell_m5
+    enabled: true
+    sl: 8.0
+    rr: 2.5
+    buy: ""
+    sell: "lswing_M5.grab_sellside==TRUE|utbot_M3.bias==BEARISH"
+
+  # M5 grab buy + M3 UT Bot trend → 89T, 31.5% WR, +$892
+  - name: p2_grab_buy_m5
+    enabled: true
+    sl: 8.0
+    rr: 2.5
+    buy: "lswing_M5.grab_buyside==TRUE|utbot_M3.bias==BULLISH"
+    sell: ""
+
+  # M3 grab sell direct → 297T, 31.6% WR, -$2,130 (counter-trend drags it down)
+  - name: p3_grab_sell_m3
+    enabled: true
+    sl: 6.0
+    rr: 2.0
+    buy: ""
+    sell: "lswing_M3.grab_sellside==TRUE"
+
+  # M3 grab buy direct → 283T, 27.2% WR, -$4,974
+  # Disabled by default — buy side weaker on XAUUSD
+  - name: p4_grab_buy_m3
+    enabled: false
+    sl: 6.0
+    rr: 2.0
+    buy: "lswing_M3.grab_buyside==TRUE"
+    sell: ""

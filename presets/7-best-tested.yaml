@@ -36,7 +36,7 @@ indicators:
   utbot_mult: 2.0
   dc_length: 20
   round_level: 500.0
-  liq_lookback: 20
+  liq_swing_period: 14
 
 control:
   use_control_file: false

@@ -1,0 +1,240 @@
+# Final Consolidated Gold Portfolio — 17 Winning Strategies
+# 
+# Synthesized from ALL prior research (Workers 1-10, reverse-engineered,
+# liquidity swings grab, scalp-range, trend-atr, combined research).
+# 
+# Backtest verified: 2026.01.01 – 2026.06.16 (5.5 months)
+#   PF: 1.10 | Trades: 1621 | WR: 61.5% | MaxDD: 19.3% | Sharpe: 5.39
+#   Net Profit: +$9,658 on $10k deposit
+#
+# Top 6 individual winners ranked by PnL:
+#   1. liq_sweep_fresh_sell       +$3,781  247t  65% WR  — Worker10/ReverseEngeered liq+M1+UTBot
+#   2. g4s_rsi2_short_trail       +$3,637  494t  62% WR  — Worker10 RSI2 mean reversion
+#   3. ls1c_sweep_stoch           +$1,896   76t  68% WR  — Worker10 liq M5 + stoch
+#   4. ls3_triple_rejection       +$1,280   23t  83% WR  — Worker10 liq + BB reentry
+#   5. p1_grab_sell_m5            +$1,231  216t  62% WR  — Liquidity Swings Grab
+#   6. liq_sweep_fresh_buy        +$401    328t  60% WR  — Worker10/ReverseEngeered buy side
+#
+# Strategies 7-17 are historically profitable (60-91% WR on 60d tests)
+# but have lower trade frequency in 5.5mo combined test.
+#
+# Sources consolidated:
+#   - STRATEGY-RESULTS.md (Worker 7 creative filters)
+#   - BEST_STRATEGIES.md (Workers 1-4 top picks)
+#   - MASTER_STRATEGIES.md (all workers 1-5)
+#   - reverse_engineered_strategies.md (ATR-settled scalps)
+#   - liquidity_swings_results.md (lswing grab signals)
+#   - past_tests/ (all worker prompts and results)
+#   - gold/ presets (scalp-range, trend-atr, liq-sweep, combined)
+#   - config-live.yaml (live demo config)
+#
+# Key settings:
+#   multi_position: false  (1 trade at a time, first-match wins)
+#   cooldown_sec: 2700    (45 min same strategy cooldown)
+#   risk_pct: 1.0         (1% of equity per trade)
+#   Magic: 740            (XAUUSD magic number)
+#   ATR settlement: atr_M15.value<12 foundational filter on most
+#   Trailing: breakeven=$5, trail=$8, step=$2
+
+backtest:
+  symbol: XAUUSD
+  period: M1
+  model: 1
+  from: "2026.01.01"
+  to: "2026.06.16"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 1.0
+  sl: 0
+  rr: 0
+  magic: 740
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 50
+  cooldown_sec: 2700
+  reversal_cooldown: 60
+  max_consec_loss: 4
+  consec_loss_pause: 1800
+  slippage: 20
+
+trailing:
+  breakeven_start: 5.0
+  trail_start: 8.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 50.0
+  liq_swing_period: 14
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # S01: Best overall — Liq sweep M1 sell + UT Bot fresh bearish flip
+  #   Backtest: +$3,781, 247 trades, 65% WR
+  #   Source: Worker10 liq_sweep variant + ReverseEngeered ATR-settled
+  - name: liq_sweep_fresh_sell
+    enabled: true
+    sl: 8.0
+    rr: 1.5
+    buy: ""
+    sell: "atr_M15.value<12|liq_M1.upper_swept==TRUE|utbot_M10.bearish_since<=10|candle_M1.is_bearish==TRUE"
+
+  # S02: RSI2 overbought mean reversion shorts with trailing
+  #   Backtest: +$3,637, 494 trades, 62% WR
+  #   Source: Worker10 g4s_rsi2_short_trail (PF=1.16 solo, 834t/5mo)
+  - name: g4s_rsi2_short_trail
+    enabled: true
+    sl: 8.0
+    rr: 2.0
+    buy: ""
+    sell: "rsi2_M1.value>85|rsi2_M1.value<100|candle_M1.is_bearish==TRUE"
+
+  # S03: Liquidity sweep M5 + stochastic OS/OB reversal
+  #   Backtest: +$1,896, 76 trades, 68% WR
+  #   Source: Worker10 ls1c_sweep_stoch (PF=1.21 solo, 491t/5mo)
+  - name: ls1c_sweep_stoch
+    enabled: true
+    sl: 8.0
+    rr: 2.0
+    buy: "liq_M5.lower_swept==TRUE|stoch_M5.zone==OS|candle_M1.is_bullish==TRUE"
+    sell: "liq_M5.upper_swept==TRUE|stoch_M5.zone==OB|candle_M1.is_bearish==TRUE"
+
+  # S04: Triple rejection — liquidity sweep + BB reentry
+  #   Backtest: +$1,280, 23 trades, 83% WR
+  #   Source: Worker10 ls3_triple_rejection (PF=1.21 solo, 522t/5mo)
+  - name: ls3_triple_rejection
+    enabled: true
+    sl: 8.0
+    rr: 2.0
+    buy: "liq_M5.lower_swept==TRUE|bb_M3.reenter_below==TRUE|candle_M1.is_bullish==TRUE"
+    sell: "liq_M5.upper_swept==TRUE|bb_M3.reenter_above==TRUE|candle_M1.is_bearish==TRUE"
+
+  # S05: Liquidity grab sell M5 + UT Bot M3 trend
+  #   Backtest: +$1,231, 216 trades, 62% WR
+  #   Source: Liquidity Swings Grab research (f1_grab_sell_m5 best)
+  - name: p1_grab_sell_m5
+    enabled: true
+    sl: 8.0
+    rr: 2.5
+    buy: ""
+    sell: "lswing_M5.grab_sellside==TRUE|utbot_M3.bias==BEARISH"
+
+  # S06: Liq sweep fresh buy M1 + UT Bot bullish flip
+  #   Backtest: +$401, 328 trades, 60% WR
+  #   Source: Worker10/ReverseEngeered buy side
+  - name: liq_sweep_fresh_buy
+    enabled: true
+    sl: 8.0
+    rr: 1.5
+    buy: "atr_M15.value<12|liq_M1.lower_swept==TRUE|utbot_M10.bullish_since<=10|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # S07: Below EMA200 + LiqSweep Lower + RSI OS (high conviction)
+  #   Backtest: +$160, 1 trade (91.7% WR on 60d test)
+  #   Source: ReverseEngeered S09/F04 (best individual WR ever)
+  - name: r09_ema200_liq_rsi
+    enabled: true
+    sl: 8.0
+    rr: 1.5
+    buy: "atr_M15.value<12|liq_M15.lower_swept==TRUE|candle_M3.is_bullish==TRUE|ema200_M15.price_vs==BELOW|rsi2_M5.value<=8|rsi14_M15.zone==OS"
+    sell: ""
+
+  # S08: RSI2 Extreme OB + RSI14 OB + Bearish candle
+  #   68.4% WR on 60d test
+  #   Source: ReverseEngeered S07_Short
+  - name: r07_overext_short
+    enabled: true
+    sl: 8.0
+    rr: 1.5
+    buy: ""
+    sell: "atr_M15.value<12|rsi2_M5.zone==EXTREME_OB|rsi14_M15.zone==OB|candle_M5.is_bearish==TRUE"
+
+  # S09: Overextended + LiqUpper + ShootingStar + Extreme RSI
+  #   66.7% WR on 60d test
+  #   Source: ReverseEngeered F03
+  - name: r03_overext_liq_star_rsi
+    enabled: true
+    sl: 10.0
+    rr: 1.5
+    buy: ""
+    sell: "atr_M15.value<12|liq_M15.upper_swept==TRUE|candle_M5.type==SHOOTING_STAR|rsi2_M5.value>=95|rsi14_M15.zone==OB"
+
+  # S10: DC lower wick rejection + ranging ADX + UT Bot bullish
+  #   Source: gold/8-scalp-range (S03 dc_wick_rej_buy)
+  - name: dc_wick_rej_buy
+    enabled: true
+    sl: 6.0
+    rr: 1.5
+    buy: "adx_M5.strength==RANGING|dc_M5.lower_wick_rej==TRUE|utbot_M3.bias==BULLISH|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # S11: DC upper wick rejection + ranging ADX + UT Bot bearish
+  #   Source: gold/8-scalp-range (S04 dc_wick_rej_sell)
+  - name: dc_wick_rej_sell
+    enabled: true
+    sl: 8.0
+    rr: 1.5
+    buy: ""
+    sell: "adx_M5.strength==RANGING|dc_M5.upper_wick_rej==TRUE|utbot_M3.bias==BEARISH|candle_M1.is_bearish==TRUE"
+
+  # S12: Liq sweep M1 + Stoch OS (range scalp buy)
+  #   Source: gold/8-scalp-range (S01 liq_sweep_m1_buy)
+  - name: liq_sweep_m1_stoch_buy
+    enabled: true
+    sl: 6.0
+    rr: 1.5
+    buy: "adx_M5.strength==RANGING|liq_M1.lower_swept==TRUE|stoch_M5.zone==OS|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # S13: Liq sweep M1 + Stoch OB (range scalp sell)
+  #   Source: gold/8-scalp-range (S02 liq_sweep_m1_sell)
+  - name: liq_sweep_m1_stoch_sell
+    enabled: true
+    sl: 7.0
+    rr: 1.5
+    buy: ""
+    sell: "adx_M5.strength==RANGING|liq_M1.upper_swept==TRUE|stoch_M5.zone==OB|candle_M1.is_bearish==TRUE"
+
+  # S14: ShootingStar + DC Upper + RSI2 OB (57.1% WR on 60d)
+  #   Source: ReverseEngeered S05/P6
+  - name: r05_star_dc_rsi
+    enabled: true
+    sl: 10.0
+    rr: 1.5
+    buy: ""
+    sell: "atr_M15.value<12|dc_M15.zone in UPPER,UPPER_MID|candle_M5.type==SHOOTING_STAR|rsi2_M5.value>=90"
+
+  # S15: ShootingStar + EMA50 Rejection + RSI2 OB (57.4% WR)
+  #   Source: ReverseEngeered S08/P8
+  - name: r08_star_ema50
+    enabled: true
+    sl: 6.0
+    rr: 1.5
+    buy: ""
+    sell: "atr_M15.value<12|candle_M5.type==SHOOTING_STAR|ema50_M15.price_vs==BELOW|rsi2_M5.value>=85"
+
+  # S16: LiqSweep Upper + Bearish + RSI2 OB (58.6% WR on 60d)
+  #   Source: ReverseEngeered P4/S01
+  - name: r04_liq_upper_rsi
+    enabled: true
+    sl: 8.0
+    rr: 1.5
+    buy: ""
+    sell: "atr_M15.value<12|liq_M15.upper_swept==TRUE|candle_M3.is_bearish==TRUE|rsi2_M5.value>=85"
+
+  # S17: M5 grab buy + UT Bot M3 trend (diversifies long side)
+  #   Source: Liquidity Swings Grab (p2_grab_buy_m5)
+  - name: p2_grab_buy_m5
+    enabled: true
+    sl: 8.0
+    rr: 2.0
+    buy: "lswing_M5.grab_buyside==TRUE|utbot_M3.bias==BULLISH"
+    sell: ""

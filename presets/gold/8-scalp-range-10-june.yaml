@@ -1,0 +1,106 @@
+backtest:
+  symbol: XAUUSD
+  period: M1
+  model: 1
+  from: "2026.06.14"
+  to: "2026.06.16"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 1.0
+  sl: 0
+  rr: 0
+  magic: 740
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 150
+  cooldown_sec: 0
+  reversal_cooldown: 60
+  max_consec_loss: 0
+  consec_loss_pause: 0
+  slippage: 20
+
+trailing:
+  breakeven_start: 5.0
+  trail_start: 8.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 50.0
+  liq_swing_period: 14
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # --- S01: LIQUIDITY SWEEP M1 (BUY) + Stoch OS ---
+  # LIQ sweep + stoch oversold = stronger reversal confirmation
+  - name: liq_sweep_m1_buy
+    enabled: true
+    sl: 6.0
+    rr: 1.5
+    buy: "adx_M5.strength==RANGING|liq_M1.lower_swept==TRUE|stoch_M5.zone==OS|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # --- S02: LIQUIDITY SWEEP M1 (SELL) + Stoch OB ---
+  - name: liq_sweep_m1_sell
+    enabled: true
+    sl: 7.0
+    rr: 1.0
+    buy: ""
+    sell: "adx_M5.strength==RANGING|liq_M1.upper_swept==TRUE|stoch_M5.zone==OB|candle_M1.is_bearish==TRUE"
+
+  # --- S03: DC WICK REJECTION LOW + UTBOT CONFIRMATION (BUY) ---
+  # Donchian lower band wick rej + UT Bot bullish = trend alignment at support
+  - name: dc_wick_rej_buy
+    enabled: true
+    sl: 6.0
+    rr: 1.5
+    buy: "adx_M5.strength==RANGING|dc_M5.lower_wick_rej==TRUE|utbot_M3.bias==BULLISH|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # --- S04: DC WICK REJECTION HIGH + UTBOT BEARISH (SELL) ---
+  - name: dc_wick_rej_sell
+    enabled: true
+    sl: 8.0
+    rr: 1.0
+    buy: ""
+    sell: "adx_M5.strength==RANGING|dc_M5.upper_wick_rej==TRUE|utbot_M3.bias==BEARISH|candle_M1.is_bearish==TRUE"
+
+  # --- S05: DC EXTREME ZONE + LOW WICK RATIO (BUY) ---
+  - name: dc_extreme_wick_ratio_buy
+    enabled: true
+    sl: 7.0
+    rr: 1.0
+    buy: "adx_M5.strength==RANGING|dc_M5.zone==LOWER|candle_M1.lower_wick_ratio>=1.5|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # --- S06: DC EXTREME ZONE + HIGH WICK RATIO (SELL) ---
+  - name: dc_extreme_wick_ratio_sell
+    enabled: true
+    sl: 6.0
+    rr: 1.0
+    buy: ""
+    sell: "adx_M5.strength==RANGING|dc_M5.zone==UPPER|candle_M1.upper_wick_ratio>=1.5|candle_M1.is_bearish==TRUE"
+
+  # --- S07: DC DOJI REVERSAL (BUY) ---
+  - name: dc_doji_reversal_buy
+    enabled: true
+    sl: 7.0
+    rr: 1.0
+    buy: "adx_M5.strength==RANGING|dc_M5.zone in LOWER,LOWER_MID|candle_M1.type==DOJI|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # --- S08: DC DOJI REVERSAL (SELL) ---
+  - name: dc_doji_reversal_sell
+    enabled: true
+    sl: 7.0
+    rr: 1.0
+    buy: ""
+    sell: "adx_M5.strength==RANGING|dc_M5.zone in UPPER,UPPER_MID|candle_M1.type==DOJI|candle_M1.is_bearish==TRUE"

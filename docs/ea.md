@@ -279,13 +279,38 @@ Detects price sweeping past recent swing high/low pivot points — areas where r
 | `.upper_level` | decimal (e.g. `65400.0`) | Highest swing high in lookback window (liquidity pool above) |
 | `.lower_level` | decimal (e.g. `64200.0`) | Lowest swing low in lookback window (liquidity pool below) |
 
-**Parameter:** `liq_lookback` (swing point scan window, default 20 bars)
+**Parameter:** `liq_swing_period` (swing point pivot lookback, bars on each side; default 14)
 
 **Examples:**
 ```
 liq_M15.upper_swept==TRUE          # Liquidity above was grabbed on M15
 liq_M15.upper_swept==TRUE|candle_M3.is_bullish==TRUE   # Upper sweep + M3 bullish confirmation
 liq_H1.lower_swept==TRUE|ema9_M5.slope==UP             # H1 sweep below + M5 trend turning up
+```
+
+### Liquidity Swings
+
+**Prefix:** `lswing_TF`
+
+Tracks the most recent unbroken swing high and swing low zones — areas where price is contained within a pivot zone. Uses the same fractal swing detection as Liquidity Sweep (STR=3 on each side). Signals remain active as long as the swing zone stays unbroken (close has not crossed past the level).
+
+| Key | Values | Description |
+|---|---|---|
+| `.high_level` | decimal (e.g. `65500.0`) | Most recent unbroken swing high level (`0` if none/broken) |
+| `.high_age` | integer (e.g. `5`) | Bars since that swing high formed (`0` if none/broken) |
+| `.high_in_zone` | `TRUE`, `FALSE` | Close is below the most recent unbroken swing high |
+| `.low_level` | decimal (e.g. `64200.0`) | Most recent unbroken swing low level (`0` if none/broken) |
+| `.low_age` | integer (e.g. `3`) | Bars since that swing low formed (`0` if none/broken) |
+| `.low_in_zone` | `TRUE`, `FALSE` | Close is above the most recent unbroken swing low |
+
+**Parameter:** `liq_lookback` (swing point scan window, shared with liquidity sweep, default 20 bars)
+
+**Examples:**
+```
+lswing_M15.high_in_zone==TRUE|utbot_M3.bias==BULLISH    # Price inside swing high zone + M3 bullish
+lswing_M15.high_in_zone==TRUE|lswing_M15.high_age>=5    # Zone held 5+ bars — fading strength
+lswing_M15.low_in_zone==TRUE|candle_M3.is_bullish==TRUE  # Price above swing low + bullish candle
+lswing_H1.low_in_zone==TRUE|lswing_H1.low_age>=3        # H1 swing low held for 3+ bars
 ```
 
 ### Candle Patterns

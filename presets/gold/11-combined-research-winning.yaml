@@ -1,0 +1,108 @@
+backtest:
+  symbol: XAUUSD
+  period: M1
+  model: 1
+  from: "2026.06.14"
+  to: "2026.06.16"
+  deposit: 10000
+  leverage: "1:100"
+
+global:
+  risk_pct: 1.0
+  sl: 0
+  rr: 0
+  magic: 740
+  multi_position: false
+  max_positions: 1
+  max_daily_trades: 150
+  cooldown_sec: 0
+  reversal_cooldown: 60
+  max_consec_loss: 0
+  consec_loss_pause: 0
+  slippage: 20
+
+trailing:
+  breakeven_start: 0.0
+  trail_start: 0.0
+  trail_step: 2.0
+
+indicators:
+  utbot_period: 10
+  utbot_mult: 2.0
+  dc_length: 20
+  round_level: 50.0
+  liq_swing_period: 14
+
+control:
+  use_control_file: false
+  write_status_file: false
+  control_poll_sec: 5
+
+strategies:
+  # === RESEARCH FILE STRATEGIES (tested on 60-day data) ===
+
+  # RS09: Below EMA200 + LiqSweep Lower + RSI OS + Bullish (91.7% WR on 60d)
+  - name: r09_ema200_liq_rsi
+    enabled: true
+    sl: 8.0
+    rr: 1.0
+    buy: "atr_M15.value<12|liq_M15.lower_swept==TRUE|candle_M3.is_bullish==TRUE|ema200_M15.price_vs==BELOW|rsi2_M5.value<=8|rsi14_M15.zone==OS"
+    sell: ""
+
+  # RS07_Short: RSI2 Extreme OB + RSI14 OB + Bearish (68.4% WR on 60d)
+  - name: r07_overext_short
+    enabled: true
+    sl: 8.0
+    rr: 1.0
+    buy: ""
+    sell: "atr_M15.value<12|rsi2_M5.zone==EXTREME_OB|rsi14_M15.zone==OB|candle_M5.is_bearish==TRUE"
+
+  # RS05: ShootingStar + DC Upper + RSI2 OB (57.1% WR, 175 trades/60d)
+  - name: r05_star_dc_rsi
+    enabled: true
+    sl: 10.0
+    rr: 1.0
+    buy: ""
+    sell: "atr_M15.value<12|dc_M15.zone in UPPER,UPPER_MID|candle_M5.type==SHOOTING_STAR|rsi2_M5.value>=90"
+
+  # RS08: ShootingStar + EMA50 Rejection + RSI2 OB (57.4% WR)
+  - name: r08_star_ema50
+    enabled: true
+    sl: 6.0
+    rr: 1.0
+    buy: ""
+    sell: "atr_M15.value<12|candle_M5.type==SHOOTING_STAR|ema50_M15.price_vs==BELOW|rsi2_M5.value>=85"
+
+  # RP4: LiqSweep Upper + Bearish + RSI2 OB (58.6% WR)
+  - name: r04_liq_upper_rsi
+    enabled: true
+    sl: 8.0
+    rr: 1.0
+    buy: ""
+    sell: "atr_M15.value<12|liq_M15.upper_swept==TRUE|candle_M3.is_bearish==TRUE|rsi2_M5.value>=85"
+
+  # RF03: Overextended + LiqUpper + Star + Extreme RSI (66.7% WR)
+  - name: r03_overext_liq_star_rsi
+    enabled: true
+    sl: 10.0
+    rr: 1.0
+    buy: ""
+    sell: "atr_M15.value<12|liq_M15.upper_swept==TRUE|candle_M5.type==SHOOTING_STAR|rsi2_M5.value>=95|rsi14_M15.zone==OB"
+
+  # === MY EARLIER WINNERS (liq sweep M1 + UT Bot M10) ===
+
+  # LW1: Liq Sweep M1 + UT Bot bullish + ATR bounded + bullish candle
+  - name: w01_liq_m1_utbot_buy
+    enabled: true
+    sl: 8.0
+    rr: 1.0
+    buy: "atr_M15.value<12|liq_M1.lower_swept==TRUE|utbot_M10.bias==BULLISH|candle_M1.is_bullish==TRUE"
+    sell: ""
+
+  # LW2: Liq Sweep M1 + UT Bot bearish recent + bearish candle (fresh flip)
+  - name: w02_liq_m1_utbot_fresh_sell
+    enabled: true
+    sl: 8.0
+    rr: 1.0
+    buy: ""
+    sell: "atr_M15.value<12|liq_M1.upper_swept==TRUE|utbot_M10.bearish_since<=10|candle_M1.is_bearish==TRUE"

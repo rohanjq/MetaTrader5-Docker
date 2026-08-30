@@ -39,7 +39,7 @@ input int    INP_UTBot_Period   = 10;      // UT Bot ATR period
 input double INP_UTBot_Mult     = 2.0;     // UT Bot ATR multiplier
 input int    INP_DC_Length      = 20;      // Donchian Channel length
 input double INP_RoundLevel     = 500.0;   // Round number interval (e.g. 500 for BTC)
-input int    INP_LiqLookback    = 20;      // Liquidity sweep: swing point lookback bars
+input int    INP_LiqSwingPeriod = 14;     // Liquidity swing: pivot lookback (bars each side)
 
 input group "=== External Control ==="
 input bool   INP_UseControlFile  = false;  // Read ea_control.csv
@@ -59,6 +59,8 @@ input int    INP_ControlPollSec  = 5;      // Poll interval (sec)
 // vwap_TF    : .price_vs .value
 // round_TF   : .dist_above .dist_below .pct
 // liq_TF     : .upper_swept .lower_swept .upper_level .lower_level
+// lswing_TF  : .high_N_level .high_N_age .low_N_level .low_N_age (N=1..5)
+//              .grab_buyside .grab_sellside .grab_size
 // candle_TF  : .type .dir .is_bullish .is_bearish
 //              .upper_wick_ratio .lower_wick_ratio .body_pct
 //              .live_*  (same fields on running bar)
@@ -688,6 +690,7 @@ void ComputeAllSignals(int tf_idx)
    ComputeVWAP(tf_idx);
    ComputeRoundLevel(tf_idx);
    ComputeLiquidity(tf_idx);
+   ComputeLiquiditySwings(tf_idx);
    ComputeCandleForBar(tf_idx, 1, "");   // closed bar
 }
 
@@ -1003,9 +1006,9 @@ void ComputeLiquidity(int tf_idx)
    ENUM_TIMEFRAMES tf = g_tfs[tf_idx];
    string tn = g_tfNames[tf_idx];
 
-   const int STR = 3;  // swing strength: bars required on each side of a valid pivot
+   const int STR = INP_LiqSwingPeriod;
 
-   int total = MathMin(Bars(_Symbol, tf), INP_LiqLookback + 5);
+   int total = MathMin(Bars(_Symbol, tf), MathMax(100, STR * 2 + 15));
    if(total < 2 * STR + 5) return;  // need enough bars for meaningful swing detection
 
    double highs[], lows[];
@@ -1064,6 +1067,200 @@ void ComputeLiquidity(int tf_idx)
    SigSet(pfx + ".lower_swept", lowerSwept ? "TRUE" : "FALSE");
    SigSet(pfx + ".upper_level", DoubleToString(upperLevel, _Digits));
    SigSet(pfx + ".lower_level", DoubleToString(lowerLevel, _Digits));
+}
+
+//--- Liquidity Swings: track up to 5 swing high/low zones
+//    Uses same fractal swing detection as ComputeLiquidity (STR each side).
+//    Tracks multiple swing levels per direction (1=most recent, 5=oldest).
+//    Levels are removed once close invalidates them.
+void ComputeLiquiditySwings(int tf_idx)
+{
+   ENUM_TIMEFRAMES tf = g_tfs[tf_idx];
+   string tn = g_tfNames[tf_idx];
+   string pfx = "lswing_" + tn;
+
+   const int STR = INP_LiqSwingPeriod;
+   const int MAX_SWINGS = 5;
+
+   int total = MathMin(Bars(_Symbol, tf), MathMax(100, STR * 2 + 5));
+   if(total < 2 * STR + 3)
+   {
+      for(int k = 1; k <= MAX_SWINGS; k++)
+      {
+         SigSet(pfx + ".high_" + IntegerToString(k) + "_level", "0");
+         SigSet(pfx + ".high_" + IntegerToString(k) + "_age", "0");
+         SigSet(pfx + ".low_" + IntegerToString(k) + "_level", "0");
+         SigSet(pfx + ".low_" + IntegerToString(k) + "_age", "0");
+      }
+      SigSet(pfx + ".grab_buyside", "FALSE");
+      SigSet(pfx + ".grab_sellside", "FALSE");
+      SigSet(pfx + ".grab_size", "0");
+      return;
+   }
+
+   double highs[], lows[], closes[], opens[];
+   if(CopyHigh(_Symbol, tf, 1, total, highs) < total) return;
+   if(CopyLow(_Symbol, tf, 1, total, lows)   < total) return;
+   if(CopyClose(_Symbol, tf, 1, total, closes) < total) return;
+   if(CopyOpen(_Symbol, tf, 1, total, opens) < total) return;
+
+   int cnt = ArraySize(highs);
+
+   // Collect all swing highs/lows with their bar indices
+   struct SwingPt { double level; int barIdx; bool broken; };
+   SwingPt swingHighs[];
+   SwingPt swingLows[];
+   ArrayResize(swingHighs, 0);
+   ArrayResize(swingLows, 0);
+
+   for(int i = STR; i < cnt - STR; i++)
+   {
+      // Swing high
+      bool is_sh = true;
+      for(int j = 1; j <= STR; j++)
+         if(highs[i] <= highs[i-j] || highs[i] <= highs[i+j]) { is_sh = false; break; }
+      if(is_sh)
+      {
+         int idx = ArraySize(swingHighs);
+         ArrayResize(swingHighs, idx + 1);
+         swingHighs[idx].level = highs[i];
+         swingHighs[idx].barIdx = i;
+         swingHighs[idx].broken = false;
+      }
+
+      // Swing low
+      bool is_sl = true;
+      for(int j = 1; j <= STR; j++)
+         if(lows[i] >= lows[i-j] || lows[i] >= lows[i+j]) { is_sl = false; break; }
+      if(is_sl)
+      {
+         int idx = ArraySize(swingLows);
+         ArrayResize(swingLows, idx + 1);
+         swingLows[idx].level = lows[i];
+         swingLows[idx].barIdx = i;
+         swingLows[idx].broken = false;
+      }
+   }
+
+   // Mark swing highs as broken if close crossed above them later
+   int shCount = ArraySize(swingHighs);
+   for(int h = 0; h < shCount; h++)
+   {
+      double hLevel = swingHighs[h].level;
+      int hBar = swingHighs[h].barIdx;
+      for(int i = hBar + 1; i < cnt; i++)
+      {
+         if(closes[i] > hLevel) { swingHighs[h].broken = true; break; }
+      }
+   }
+
+   // Mark swing lows as broken if close crossed below them later
+   int slCount = ArraySize(swingLows);
+   for(int l = 0; l < slCount; l++)
+   {
+      double lLevel = swingLows[l].level;
+      int lBar = swingLows[l].barIdx;
+      for(int i = lBar + 1; i < cnt; i++)
+      {
+         if(closes[i] < lLevel) { swingLows[l].broken = true; break; }
+      }
+   }
+
+   // Register unbroken swing highs (most recent first, up to MAX_SWINGS)
+   int highReg = 0;
+   for(int h = shCount - 1; h >= 0 && highReg < MAX_SWINGS; h--)
+   {
+      if(!swingHighs[h].broken)
+      {
+         highReg++;
+         int age = cnt - 1 - swingHighs[h].barIdx;
+         SigSet(pfx + ".high_" + IntegerToString(highReg) + "_level",
+                DoubleToString(swingHighs[h].level, _Digits));
+         SigSet(pfx + ".high_" + IntegerToString(highReg) + "_age",
+                IntegerToString(age));
+      }
+   }
+   for(int k = highReg + 1; k <= MAX_SWINGS; k++)
+   {
+      SigSet(pfx + ".high_" + IntegerToString(k) + "_level", "0");
+      SigSet(pfx + ".high_" + IntegerToString(k) + "_age", "0");
+   }
+
+   // Register unbroken swing lows (most recent first, up to MAX_SWINGS)
+   int lowReg = 0;
+   for(int l = slCount - 1; l >= 0 && lowReg < MAX_SWINGS; l--)
+   {
+      if(!swingLows[l].broken)
+      {
+         lowReg++;
+         int age = cnt - 1 - swingLows[l].barIdx;
+         SigSet(pfx + ".low_" + IntegerToString(lowReg) + "_level",
+                DoubleToString(swingLows[l].level, _Digits));
+         SigSet(pfx + ".low_" + IntegerToString(lowReg) + "_age",
+                IntegerToString(age));
+      }
+   }
+   for(int k = lowReg + 1; k <= MAX_SWINGS; k++)
+   {
+      SigSet(pfx + ".low_" + IntegerToString(k) + "_level", "0");
+      SigSet(pfx + ".low_" + IntegerToString(k) + "_age", "0");
+   }
+
+   //--- Liquidity Grab detection (Flux-style)
+   // Check if closed bar (index cnt-1) grabbed any swing level
+   double h1 = iHigh(_Symbol, tf, 1);
+   double l1 = iLow(_Symbol, tf, 1);
+   double c1 = iClose(_Symbol, tf, 1);
+   double o1 = iOpen(_Symbol, tf, 1);
+   double body = MathAbs(c1 - o1);
+   double upperWick = h1 - MathMax(c1, o1);
+   double lowerWick = MathMin(c1, o1) - l1;
+
+   bool grabFound = false;
+   bool grabBuyside = true;
+   int grabSize = 0;
+   const double WBR_THRESHOLD = 0.5;
+
+   // Buyside grab: wick above swing high, close below it
+   for(int h = 0; h < shCount; h++)
+   {
+      double swH = swingHighs[h].level;
+      if(upperWick > 0 && h1 >= swH && c1 < swH)
+      {
+         double curWBR = body > 0 ? (upperWick / body) : 999;
+         if(curWBR >= WBR_THRESHOLD)
+         {
+            grabFound = true;
+            grabBuyside = true;
+            grabSize = (int)MathFloor(MathMin(curWBR / WBR_THRESHOLD, 3));
+            break;
+         }
+      }
+   }
+
+   // Sellside grab: wick below swing low, close above it
+   if(!grabFound)
+   {
+      for(int l = 0; l < slCount; l++)
+      {
+         double swL = swingLows[l].level;
+         if(lowerWick > 0 && l1 <= swL && c1 > swL)
+         {
+            double curWBR = body > 0 ? (lowerWick / body) : 999;
+            if(curWBR >= WBR_THRESHOLD)
+            {
+               grabFound = true;
+               grabBuyside = false;
+               grabSize = (int)MathFloor(MathMin(curWBR / WBR_THRESHOLD, 3));
+               break;
+            }
+         }
+      }
+   }
+
+   SigSet(pfx + ".grab_buyside", grabFound && grabBuyside ? "TRUE" : "FALSE");
+   SigSet(pfx + ".grab_sellside", grabFound && !grabBuyside ? "TRUE" : "FALSE");
+   SigSet(pfx + ".grab_size", IntegerToString(grabSize));
 }
 
 //--- VWAP: session-based (from midnight)
