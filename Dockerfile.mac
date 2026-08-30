@@ -1,0 +1,45 @@
+# Mac / corporate-proxy build variant.
+# Identical to ./Dockerfile but trusts an extra CA (e.g. a Zscaler TLS-inspection
+# root) before any HTTPS download, so builds work behind a corporate proxy.
+# Build on Apple Silicon:
+#   podman build --platform linux/amd64 -t mt5-docker -f Dockerfile.mac .
+# NOTE: this only fixes the BUILD. MetaTrader5 (a Wine app) still cannot RUN on
+# Apple Silicon under emulation (Wine aborts on the 16KB VM page size). Use the
+# x86_64 image to actually run MT5.
+FROM ghcr.io/linuxserver/baseimage-kasmvnc:debianbookworm
+
+LABEL maintainer="rohanjq"
+
+ENV TITLE=Metatrader5
+ENV WINEPREFIX="/data/wine"
+ENV WINEDEBUG=-all
+
+# Trust extra CA certs (corporate TLS-inspection root) before any HTTPS call.
+# Place *.crt PEM files in ./certs/ (e.g. certs/zscaler-root-ca.crt).
+COPY certs/ /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
+# System packages + Wine (single layer)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-venv \
+        python3-xdg python3-yaml \
+        wget curl gnupg2 software-properties-common ca-certificates \
+    && mkdir -pm755 /etc/apt/keyrings \
+    && wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
+    && wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/debian/dists/bookworm/winehq-bookworm.sources \
+    && dpkg --add-architecture i386 \
+    && apt-get update \
+    && apt-get install --install-recommends -y winehq-stable \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Copy startup scripts + bundled MQL5 source files + tester config
+COPY Metatrader /Metatrader
+RUN chmod +x /Metatrader/start.sh
+
+# KasmVNC defaults (autostart, right-click menu)
+COPY root /
+
+EXPOSE 3000 8001
+VOLUME /config /data
