@@ -44,7 +44,6 @@ MT5_WIN_CONFIG="${MT5_WIN_INSTALL}\\Config"
 RPYC_PORT="${MT5_RPYC_PORT:-8001}"
 TICK_BRIDGE_PORT="${MT5_TICK_BRIDGE_PORT:-18080}"
 TICK_BRIDGE_ENABLED="${MT5_TICK_BRIDGE_ENABLED:-true}"
-TICK_BRIDGE_DB="${MT5_TICK_BRIDGE_DB:-Z:\\data\\ticks\\bridge.sqlite3}"
 
 MONO_URL="https://dl.winehq.org/wine/wine-mono/10.3.0/wine-mono-10.3.0-x86.msi"
 PYTHON_URL="https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe"
@@ -85,7 +84,7 @@ download_if_missing() {
 log "Creating data directories..."
 mkdir -p "$DOWNLOADS_DIR" "$EXPERTS_DIR" "$INDICATORS_DIR" \
          "$SCRIPTS_DIR" "$SIGNALS_DIR" "$LOGS_DIR" \
-         "$DATA_DIR/reports" "$DATA_DIR/config" "$DATA_DIR/ticks"
+         "$DATA_DIR/reports" "$DATA_DIR/config"
 
 # ============================================================
 # [1/7] Mono
@@ -424,7 +423,7 @@ if [ -e "$MT5_EXE" ]; then
         if [ "$TICK_BRIDGE_ENABLED" = "true" ]; then
             log "[7/7] Starting MT5 tick bridge on port $TICK_BRIDGE_PORT..."
             $WINE python.exe Z:\\Metatrader\\mt5_tick_bridge.py \
-                --addr "0.0.0.0:$TICK_BRIDGE_PORT" --db "$TICK_BRIDGE_DB" &
+                --addr "0.0.0.0:$TICK_BRIDGE_PORT" &
             for i in $(seq 1 40); do
                 if timeout 1 bash -c "echo > /dev/tcp/127.0.0.1/$TICK_BRIDGE_PORT" 2>/dev/null; then
                     log "[7/7] MT5 tick bridge listening on port $TICK_BRIDGE_PORT"

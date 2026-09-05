@@ -6,8 +6,6 @@ from __future__ import annotations
 import argparse
 import ctypes
 import json
-import os
-import sqlite3
 import struct
 import threading
 import time
@@ -25,67 +23,16 @@ VERSION = 1
 ERROR_BROKEN_PIPE = 109
 ERROR_PIPE_CONNECTED = 535
 MAX_TICKS_PER_SYMBOL = 100_000
-RETENTION_NS = 14 * 24 * 60 * 60 * 1_000_000_000
 
 
 class TickBuffer:
-    def __init__(self, db_path: str) -> None:
+    def __init__(self) -> None:
         self._lock = threading.Lock()
         self._ticks: dict[str, deque[dict]] = defaultdict(
             lambda: deque(maxlen=MAX_TICKS_PER_SYMBOL)
         )
-        os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
-        self._db = sqlite3.connect(db_path, check_same_thread=False)
-        self._db.execute("PRAGMA journal_mode=WAL")
-        self._db.execute("PRAGMA synchronous=FULL")
-        self._db.execute(
-            """CREATE TABLE IF NOT EXISTS ticks (
-                cursor INTEGER PRIMARY KEY,
-                symbol TEXT NOT NULL,
-                seq INTEGER NOT NULL,
-                time_ms INTEGER NOT NULL,
-                recv_ns INTEGER NOT NULL,
-                captured_us INTEGER NOT NULL,
-                bid REAL NOT NULL,
-                ask REAL NOT NULL,
-                last REAL NOT NULL,
-                volume REAL NOT NULL,
-                flags INTEGER NOT NULL
-            )"""
-        )
-        self._db.execute(
-            "CREATE INDEX IF NOT EXISTS ticks_symbol_cursor ON ticks(symbol, cursor)"
-        )
-        self._db.commit()
-        row = self._db.execute("SELECT COALESCE(MAX(cursor), 0) FROM ticks").fetchone()
-        self._last_cursor = int(row[0])
-        self._append_count = 0
-        self._restore_memory()
+        self._last_cursor = 0
         self.pipe_connected = False
-
-    def _restore_memory(self) -> None:
-        rows = self._db.execute(
-            """SELECT cursor,symbol,seq,time_ms,recv_ns,captured_us,bid,ask,last,volume,flags
-               FROM ticks ORDER BY cursor DESC LIMIT ?""",
-            (MAX_TICKS_PER_SYMBOL,),
-        ).fetchall()
-        for row in reversed(rows):
-            self._ticks[row[1]].append(self._row_to_tick(row))
-
-    @staticmethod
-    def _row_to_tick(row) -> dict:
-        return {
-            "cursor": int(row[0]),
-            "seq": int(row[2]),
-            "time_ms": int(row[3]),
-            "recv_ns": int(row[4]),
-            "captured_us": int(row[5]),
-            "bid": float(row[6]),
-            "ask": float(row[7]),
-            "last": float(row[8]),
-            "volume": float(row[9]),
-            "flags": int(row[10]),
-        }
 
     def set_connected(self, connected: bool) -> None:
         with self._lock:
@@ -108,7 +55,8 @@ class TickBuffer:
             # OHLC bucket timestamp. Preserve strict ordering on coarse clocks.
             cursor = max(time.time_ns(), self._last_cursor + 1)
             self._last_cursor = cursor
-            tick = {
+            self._ticks[symbol].append(
+                {
                     "cursor": cursor,
                     "seq": sequence,
                     "time_ms": src_ms,
@@ -120,62 +68,13 @@ class TickBuffer:
                     "volume": volume_real if volume_real > 0 else float(volume),
                     "flags": flags,
                 }
-            # Commit before exposing the tick over HTTP. The named-pipe reader
-            # is the durable handoff boundary; a bridge/container restart can
-            # reload all unconsumed ticks from this WAL-backed journal.
-            self._db.execute(
-                """INSERT INTO ticks
-                   (cursor,symbol,seq,time_ms,recv_ns,captured_us,bid,ask,last,volume,flags)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
-                (
-                    cursor,
-                    symbol,
-                    sequence,
-                    src_ms,
-                    cursor,
-                    captured_us,
-                    bid,
-                    ask,
-                    last,
-                    tick["volume"],
-                    flags,
-                ),
             )
-            self._db.commit()
-            self._ticks[symbol].append(tick)
-            self._append_count += 1
-            if self._append_count % 10_000 == 0:
-                self._db.execute(
-                    "DELETE FROM ticks WHERE recv_ns < ?", (time.time_ns() - RETENTION_NS,)
-                )
-                self._db.commit()
 
-    def after(self, symbol: str, cursor: int, limit: int = 5000) -> dict:
+    def after(self, symbol: str, cursor: int, limit: int = 5000) -> list[dict]:
         with self._lock:
-            bounds = self._db.execute(
-                "SELECT MIN(cursor), MAX(cursor) FROM ticks WHERE symbol = ?", (symbol,)
-            ).fetchone()
-            oldest = int(bounds[0] or 0)
-            latest = int(bounds[1] or 0)
-            gap = cursor > 0 and ((oldest and cursor < oldest - 1) or cursor > latest)
-            if gap:
-                return {
-                    "ticks": [],
-                    "gap": True,
-                    "oldest_cursor": oldest,
-                    "latest_cursor": latest,
-                }
-            rows = self._db.execute(
-                """SELECT cursor,symbol,seq,time_ms,recv_ns,captured_us,bid,ask,last,volume,flags
-                   FROM ticks WHERE symbol = ? AND cursor > ? ORDER BY cursor LIMIT ?""",
-                (symbol, cursor, limit),
-            ).fetchall()
-            return {
-                "ticks": [self._row_to_tick(row) for row in rows],
-                "gap": False,
-                "oldest_cursor": oldest,
-                "latest_cursor": latest,
-            }
+            return [t.copy() for t in self._ticks.get(symbol, ()) if t["cursor"] > cursor][
+                :limit
+            ]
 
     def status(self) -> dict:
         with self._lock:
@@ -184,11 +83,10 @@ class TickBuffer:
                 "pipe_connected": self.pipe_connected,
                 "latest_cursor": self._last_cursor,
                 "symbols": {k: len(v) for k, v in self._ticks.items()},
-                "durable": True,
             }
 
 
-ticks: TickBuffer | None = None
+ticks = TickBuffer()
 mt5_lock = threading.Lock()
 
 
@@ -241,7 +139,6 @@ def pipe_loop(pipe_name: str) -> None:
                 if error != ERROR_PIPE_CONNECTED:
                     time.sleep(0.1)
                     continue
-            assert ticks is not None
             ticks.set_connected(True)
             print(f"tick pipe connected: {pipe_name}", flush=True)
 
@@ -258,7 +155,6 @@ def pipe_loop(pipe_name: str) -> None:
                     continue
                 ticks.append(buf.raw)
         finally:
-            assert ticks is not None
             ticks.set_connected(False)
             kernel32.DisconnectNamedPipe(handle)
             kernel32.CloseHandle(handle)
@@ -320,8 +216,7 @@ class Handler(BaseHTTPRequestHandler):
             if request.path == "/ticks":
                 symbol = query.get("symbol", [""])[0]
                 cursor = int(query.get("since_cursor", ["0"])[0])
-                assert ticks is not None
-                self.send_json(200, ticks.after(symbol, cursor))
+                self.send_json(200, {"ticks": ticks.after(symbol, cursor)})
             elif request.path == "/rates":
                 self.send_json(
                     200,
@@ -335,7 +230,6 @@ class Handler(BaseHTTPRequestHandler):
                     },
                 )
             elif request.path == "/healthz":
-                assert ticks is not None
                 self.send_json(200, ticks.status())
             else:
                 self.send_json(404, {"error": "not found"})
@@ -347,17 +241,12 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    global ticks
     parser = argparse.ArgumentParser()
     parser.add_argument("--addr", default="0.0.0.0:18080")
     parser.add_argument("--pipe", default=PIPE_NAME)
-    parser.add_argument(
-        "--db", default=os.environ.get("MT5_TICK_BRIDGE_DB", r"Z:\\data\\ticks\\bridge.sqlite3")
-    )
     args = parser.parse_args()
     host, _, port = args.addr.rpartition(":")
 
-    ticks = TickBuffer(args.db)
     threading.Thread(target=pipe_loop, args=(args.pipe,), daemon=True).start()
     server = ThreadingHTTPServer((host, int(port)), Handler)
     print(f"MT5 tick bridge listening on {args.addr}", flush=True)
