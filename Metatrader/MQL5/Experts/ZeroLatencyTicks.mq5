@@ -9,6 +9,7 @@
 
 input string INP_PipeName       = "\\\\.\\pipe\\mt5_ticks";
 input int    INP_ReconnectMs    = 10;
+input string INP_Symbols        = ""; // comma-separated; empty = chart symbol
 
 #define TICK_MAGIC        0x5435544D // "MT5T" when read as little-endian bytes
 #define TICK_VERSION      1
@@ -39,12 +40,15 @@ ulong     g_sequence = 0;
 TickFrame g_frame;
 int       g_last_connect_error = 0;
 bool      g_logged_first_tick = false;
-long      g_last_time_msc = -1;
-double    g_last_bid = 0.0;
-double    g_last_ask = 0.0;
-double    g_last_last = 0.0;
-ulong     g_last_volume = 0;
-uint      g_last_flags = 0;
+string    g_symbols[];
+long      g_last_time_msc[];
+double    g_last_bid[];
+double    g_last_ask[];
+double    g_last_last[];
+double    g_last_volume_real[];
+ulong     g_last_volume[];
+uint      g_last_flags[];
+int       g_chart_symbol_index = -1;
 
 uint SymbolHash(const string value)
 {
@@ -110,15 +114,61 @@ int OnInit()
    g_frame.magic = TICK_MAGIC;
    g_frame.version = TICK_VERSION;
    g_frame.frame_size = (ushort)sizeof(g_frame);
-   SetFrameSymbol(_Symbol);
+
+   string configured = INP_Symbols;
+   StringTrimLeft(configured);
+   StringTrimRight(configured);
+   if(configured == "")
+   {
+      ArrayResize(g_symbols, 1);
+      g_symbols[0] = _Symbol;
+   }
+   else
+   {
+      string parsed[];
+      const int parsed_count = StringSplit(configured, (ushort)',', parsed);
+      ArrayResize(g_symbols, parsed_count + 1);
+      int count = 0;
+      for(int i = 0; i < parsed_count; ++i)
+      {
+         string symbol = parsed[i];
+         StringTrimLeft(symbol);
+         StringTrimRight(symbol);
+         if(symbol == "")
+            continue;
+         g_symbols[count++] = symbol;
+      }
+      ArrayResize(g_symbols, count);
+   }
+
+   const int symbol_count = ArraySize(g_symbols);
+   if(symbol_count == 0)
+      return INIT_PARAMETERS_INCORRECT;
+   ArrayResize(g_last_time_msc, symbol_count);
+   ArrayResize(g_last_bid, symbol_count);
+   ArrayResize(g_last_ask, symbol_count);
+   ArrayResize(g_last_last, symbol_count);
+   ArrayResize(g_last_volume, symbol_count);
+   ArrayResize(g_last_volume_real, symbol_count);
+   ArrayResize(g_last_flags, symbol_count);
+   for(int i = 0; i < symbol_count; ++i)
+   {
+      g_last_time_msc[i] = -1;
+      if(!SymbolSelect(g_symbols[i], true))
+         PrintFormat("ZeroLatencyTicks cannot select symbol: %s error=%d",
+                     g_symbols[i], GetLastError());
+      if(g_symbols[i] == _Symbol)
+         g_chart_symbol_index = i;
+   }
 
    const int reconnect_ms = MathMax(INP_ReconnectMs, 10);
    if(!EventSetMillisecondTimer(reconnect_ms))
       return INIT_FAILED;
 
    ConnectPipe();
-   PrintFormat("ZeroLatencyTicks ready: symbol=%s pipe=%s frame=%u bytes",
-               _Symbol, INP_PipeName, sizeof(g_frame));
+   PrintFormat("ZeroLatencyTicks ready: symbols=%s pipe=%s frame=%u bytes",
+               INP_Symbols == "" ? _Symbol : INP_Symbols,
+               INP_PipeName, sizeof(g_frame));
    return INIT_SUCCEEDED;
 }
 
@@ -131,33 +181,29 @@ void OnDeinit(const int reason)
 void OnTimer()
 {
    ConnectPipe();
-   PublishLatestTick();
+   for(int i = 0; i < ArraySize(g_symbols); ++i)
+      PublishLatestTick(g_symbols[i], i);
 }
 
-void PublishLatestTick()
+void PublishLatestTick(const string symbol, const int index)
 {
    if(g_pipe == INVALID_HANDLE)
       return;
 
    MqlTick tick;
-   if(!SymbolInfoTick(_Symbol, tick))
+   if(!SymbolInfoTick(symbol, tick))
       return;
 
    // OnTick is the primary path. The 10 ms timer also calls this function as
    // a Wine/startup-chart fallback, but this identity check prevents repeats.
-   if(tick.time_msc == g_last_time_msc &&
-      tick.bid == g_last_bid && tick.ask == g_last_ask &&
-      tick.last == g_last_last && tick.volume == g_last_volume &&
-      tick.flags == g_last_flags)
+   if(tick.time_msc == g_last_time_msc[index] &&
+      tick.bid == g_last_bid[index] && tick.ask == g_last_ask[index] &&
+      tick.last == g_last_last[index] && tick.volume == g_last_volume[index] &&
+      tick.volume_real == g_last_volume_real[index] &&
+      tick.flags == g_last_flags[index])
       return;
 
-   g_last_time_msc = tick.time_msc;
-   g_last_bid = tick.bid;
-   g_last_ask = tick.ask;
-   g_last_last = tick.last;
-   g_last_volume = tick.volume;
-   g_last_flags = tick.flags;
-
+   SetFrameSymbol(symbol);
    g_frame.sequence = ++g_sequence;
    g_frame.time_msc = tick.time_msc;
    g_frame.captured_us = GetMicrosecondCount();
@@ -185,12 +231,24 @@ void PublishLatestTick()
       PrintFormat("ZeroLatencyTicks pipe write failed: written=%u expected=%u error=%d",
                   written, sizeof(g_frame), error);
       DisconnectPipe();
+      return;
    }
+
+   // Mark a quote delivered only after the entire frame was accepted. A pipe
+   // reconnect therefore re-sends the latest quote instead of losing it.
+   g_last_time_msc[index] = tick.time_msc;
+   g_last_bid[index] = tick.bid;
+   g_last_ask[index] = tick.ask;
+   g_last_last[index] = tick.last;
+   g_last_volume[index] = tick.volume;
+   g_last_volume_real[index] = tick.volume_real;
+   g_last_flags[index] = tick.flags;
 }
 
 void OnTick()
 {
    // Never attempt a connection here: opening a missing pipe belongs off the
    // latency-sensitive path and is handled by OnTimer().
-   PublishLatestTick();
+   if(g_chart_symbol_index >= 0)
+      PublishLatestTick(_Symbol, g_chart_symbol_index);
 }
