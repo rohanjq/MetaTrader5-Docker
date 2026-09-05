@@ -1,8 +1,8 @@
 # Low-latency tick publisher
 
-`ZeroLatencyTicks.mq5` is the default live-mode EA. It captures the chart symbol in `OnTick()` and immediately writes a fixed binary frame to the local Windows named pipe `\\.\pipe\mt5_ticks`.
+`ZeroLatencyTicks.mq5` is the default live-mode EA. It captures the chart symbol in `OnTick()` and immediately writes a fixed binary frame to the local Windows named pipe `\\.\pipe\mt5_ticks`. The bundled Wine-side bridge consumes that pipe and exposes it at `http://localhost:18080` for the generic [`ohlc`](https://github.com/rohanjq/ohlc) service.
 
-The receiving application must create the named-pipe server before the EA connects. Because MT5 runs under Wine, a native Windows consumer launched in the same Wine prefix is the direct interoperability path. A Linux-native consumer needs a small Wine-side named-pipe-to-Unix-socket bridge. No network port is opened by this EA.
+The bridge starts before MT5, creates the named-pipe server, and buffers up to 100,000 ticks per symbol. A consumer reads ordered ticks from `GET /ticks?symbol=BTCUSDTp&since_cursor=0`; historical closed bars remain available from `GET /rates`.
 
 ## Runtime behavior
 
@@ -14,6 +14,8 @@ The receiving application must create the named-pipe server before the EA connec
 - When no receiver is running, ticks are dropped instead of queued or blocking the terminal.
 - There is no per-tick logging.
 - Attach one EA per chart symbol. Set `MT5_STARTUP_SYMBOL` to choose the default symbol.
+- The bridge assigns a strictly increasing receipt-time nanosecond cursor so
+  multiple ticks with the same MT5 millisecond timestamp are not lost.
 
 Named-pipe transfer removes network transport latency, but “zero latency” cannot be guaranteed: broker delivery, terminal event scheduling, Wine, and a slow pipe reader still contribute latency. MetaTrader also coalesces new-tick events when an `OnTick` handler is already executing.
 
@@ -46,6 +48,21 @@ The EA inputs are:
 
 - `INP_PipeName`: defaults to `\\.\pipe\mt5_ticks`.
 - `INP_ReconnectMs`: reconnect and fallback-poll interval, default and minimum 10 ms.
+
+The container settings are `MT5_TICK_BRIDGE_ENABLED` (default `true`) and
+`MT5_TICK_BRIDGE_PORT` (default `18080`). Configure the OHLC service with:
+
+```dotenv
+OHLC_SOURCE=mt5
+OHLC_SYMBOLS=BTCUSDTp
+OHLC_MT5_BRIDGE=http://host.docker.internal:18080
+OHLC_MT5_POLL_INTERVAL=20ms
+```
+
+The OHLC engine updates its forming candle for every tick. At a timeframe
+boundary it emits a closed candle; its one-second sweep also closes an idle M1
+candle even when no new boundary tick arrives. The bridge's `/rates` endpoint
+supports cold-start and periodic reconciliation of finalized candles.
 
 To run the trading EA again, set this in `.env`:
 

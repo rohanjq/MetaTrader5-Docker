@@ -28,5 +28,5 @@ RUN chmod +x /Metatrader/start.sh
 # KasmVNC defaults (autostart, right-click menu)
 COPY root /
 
-EXPOSE 3000 8001
+EXPOSE 3000 8001 18080
 VOLUME /config /data

@@ -14,6 +14,7 @@
 |------|---------|-------------|
 | 3000 | KasmVNC | Browser access to MT5 desktop |
 | 8001 | rpyc | Python ↔ MT5 API bridge (live mode only) |
+| 18080 | Tick bridge | Named-pipe ticks and MT5 historical rates for `ohlc` |
 
 ## Environment Variables
 
@@ -32,6 +33,8 @@ Set in `.env` (see `.env.example`):
 | `MT5_STARTUP_SYMBOL` | `XAUUSD` | Chart symbol for live mode |
 | `MT5_STARTUP_PERIOD` | `M1` | Chart timeframe for live mode |
 | `MT5_RPYC_PORT` | `8001` | rpyc bridge port |
+| `MT5_TICK_BRIDGE_PORT` | `18080` | HTTP port consumed by the generic OHLC service |
+| `MT5_TICK_BRIDGE_ENABLED` | `true` | Start the named-pipe-to-HTTP tick bridge in live mode |
 | `MT5_CMD_OPTIONS` | (empty) | Extra terminal64.exe flags |
 | `PUID` | `1000` | Container user ID |
 | `PGID` | `1000` | Container group ID |

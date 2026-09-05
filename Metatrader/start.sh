@@ -42,6 +42,8 @@ MT5_CONFIG_DIR="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/Config"
 MT5_WIN_INSTALL="C:\\Program Files\\${MT5_INSTALL_DIR_NAME}"
 MT5_WIN_CONFIG="${MT5_WIN_INSTALL}\\Config"
 RPYC_PORT="${MT5_RPYC_PORT:-8001}"
+TICK_BRIDGE_PORT="${MT5_TICK_BRIDGE_PORT:-18080}"
+TICK_BRIDGE_ENABLED="${MT5_TICK_BRIDGE_ENABLED:-true}"
 
 MONO_URL="https://dl.winehq.org/wine/wine-mono/10.3.0/wine-mono-10.3.0-x86.msi"
 PYTHON_URL="https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe"
@@ -418,6 +420,22 @@ if [ -e "$MT5_EXE" ]; then
 
         log "[7/7] Tester run complete."
     else
+        if [ "$TICK_BRIDGE_ENABLED" = "true" ]; then
+            log "[7/7] Starting MT5 tick bridge on port $TICK_BRIDGE_PORT..."
+            $WINE python.exe Z:\\Metatrader\\mt5_tick_bridge.py \
+                --addr "0.0.0.0:$TICK_BRIDGE_PORT" &
+            for i in $(seq 1 40); do
+                if timeout 1 bash -c "echo > /dev/tcp/127.0.0.1/$TICK_BRIDGE_PORT" 2>/dev/null; then
+                    log "[7/7] MT5 tick bridge listening on port $TICK_BRIDGE_PORT"
+                    break
+                fi
+                sleep 0.25
+                if [ "$i" -eq 40 ]; then
+                    log "[7/7] WARNING: MT5 tick bridge failed to start"
+                fi
+            done
+        fi
+
         log "[7/7] Launching MT5 terminal..."
         mt5_args="/portable"
         if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then

@@ -12,11 +12,13 @@ services:
     ports:
       - 3000:3000
       - 8001:8001
+      - 18080:18080
     env_file:
       - .env
     environment:
       - UPDATE_PACKAGES=false
       - MT5_MODE=live
+      - MT5_TICK_BRIDGE_ENABLED=true
     security_opt:
       - seccomp=unconfined
       - label=disable
