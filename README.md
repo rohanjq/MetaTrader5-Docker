@@ -1,6 +1,6 @@
 # MetaTrader5-Docker
 
-Docker container running MetaTrader 5 via Wine + KasmVNC on Linux, bundled with the **MasterTrader EA** — an expression-based multi-strategy trading engine.
+Docker container running MetaTrader 5 via Wine + KasmVNC on Linux. Live mode starts the **ZeroLatencyTicks EA** by default; the bundled **MasterTrader EA** remains available for automated trading and backtesting.
 
 ## Quick Start
 
@@ -23,6 +23,7 @@ Access MT5 via browser at `http://<host>:3000`.
 |---|---|
 | [Docker & Infrastructure](docs/docker.md) | Container architecture, volumes, symlinks, env vars, startup steps, ports |
 | [MasterTrader EA](docs/ea.md) | Signal reference, timeframes, expression syntax, strategy slots, all indicators |
+| [Low-latency ticks](docs/zero-latency-ticks.md) | Named-pipe endpoint and binary tick-frame protocol |
 | [YAML Config](docs/yaml-config.md) | config.yaml schema, gen_inputs.py converter, live vs backtest usage |
 | [Report Parser](docs/parse_report.md) | parse_report.py usage, output fields, JSON/CSV/human formats |
 | [EA Design](DESIGN.md) | Full EA technical design document |
@@ -32,6 +33,7 @@ Access MT5 via browser at `http://<host>:3000`.
 ```
 ├── Metatrader/
 │   ├── MQL5/Experts/MasterTrader.mq5   # EA source
+│   ├── MQL5/Experts/ZeroLatencyTicks.mq5 # Default live tick publisher
 │   ├── config.yaml                      # Default YAML config (bundled in image)
 │   ├── gen_inputs.py                    # YAML → tester.ini converter
 │   ├── tester.ini                       # Static fallback tester config

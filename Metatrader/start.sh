@@ -50,7 +50,8 @@ MT5_SETUP_URL="${MT5_SETUP_URL:-https://download.terminal.free/cdn/web/pxbt.trad
 MT5_LOGIN="${MT5_LOGIN:-}"
 MT5_PASSWORD="${MT5_PASSWORD:-}"
 MT5_SERVER="${MT5_SERVER:-}"
-MT5_STARTUP_EA="${MT5_STARTUP_EA:-}"
+MT5_STARTUP_EA="${MT5_STARTUP_EA:-ZeroLatencyTicks}"
+MT5_STARTUP_PARAMETERS="${MT5_STARTUP_PARAMETERS:-}"
 MT5_STARTUP_SYMBOL="${MT5_STARTUP_SYMBOL:-BTCUSDT}"
 MT5_STARTUP_PERIOD="${MT5_STARTUP_PERIOD:-M1}"
 MT5_CMD_OPTIONS="${MT5_CMD_OPTIONS:-}"
@@ -192,18 +193,23 @@ EOINI
 
 [StartUp]
 Expert=$MT5_STARTUP_EA
-ExpertParameters=MasterTrader.set
 Symbol=$MT5_STARTUP_SYMBOL
 Period=$MT5_STARTUP_PERIOD
 EOSTART
+        if [ -n "$MT5_STARTUP_PARAMETERS" ]; then
+            echo "ExpertParameters=$MT5_STARTUP_PARAMETERS" >> "$MT5_CONFIG_DIR/auto_login.ini"
+        fi
     fi
 
-    # Generate .set preset file so MT5 loads EA with correct parameters
-    if [ -f "$DATA_DIR/config/config.yaml" ]; then
+    # MasterTrader alone consumes the generated YAML-based .set preset.
+    if [ "$MT5_STARTUP_EA" = "MasterTrader" ] && [ -f "$DATA_DIR/config/config.yaml" ]; then
         log "[5/7] Generating EA preset from config.yaml..."
         mkdir -p "$MT5_MQL5_DIR/Presets"
         if python3 /Metatrader/gen_inputs.py "$DATA_DIR/config/config.yaml" --live -o "$MT5_MQL5_DIR/Presets/MasterTrader.set"; then
             log "[5/7] Wrote MQL5/Presets/MasterTrader.set"
+            if [ -z "$MT5_STARTUP_PARAMETERS" ]; then
+                echo "ExpertParameters=MasterTrader.set" >> "$MT5_CONFIG_DIR/auto_login.ini"
+            fi
         else
             log "[5/7] WARNING: gen_inputs.py failed — EA will use compiled defaults"
         fi

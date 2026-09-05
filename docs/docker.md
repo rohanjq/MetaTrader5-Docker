@@ -27,7 +27,8 @@ Set in `.env` (see `.env.example`):
 | `MT5_MODE` | `live` | `live` or `tester` |
 | `MT5_INSTALL_DIR` | `PXBT Trading MT5 Terminal` | MT5 install folder name |
 | `MT5_SETUP_URL` | (pxbt default) | MT5 installer download URL |
-| `MT5_STARTUP_EA` | (empty) | EA to auto-attach in live mode |
+| `MT5_STARTUP_EA` | `ZeroLatencyTicks` | EA to auto-attach in live mode; set empty only via a custom startup config to disable |
+| `MT5_STARTUP_PARAMETERS` | (empty) | Optional `.set` filename for the startup EA |
 | `MT5_STARTUP_SYMBOL` | `XAUUSD` | Chart symbol for live mode |
 | `MT5_STARTUP_PERIOD` | `M1` | Chart timeframe for live mode |
 | `MT5_RPYC_PORT` | `8001` | rpyc bridge port |
