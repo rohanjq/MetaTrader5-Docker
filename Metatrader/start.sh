@@ -41,6 +41,8 @@ MT5_MQL5_DIR="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/MQL5"
 MT5_CONFIG_DIR="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/Config"
 MT5_WIN_INSTALL="C:\\Program Files\\${MT5_INSTALL_DIR_NAME}"
 MT5_WIN_CONFIG="${MT5_WIN_INSTALL}\\Config"
+MT5_RUNTIME_CONFIG="$WINEPREFIX/drive_c/mt5_startup.ini"
+MT5_WIN_RUNTIME_CONFIG="C:\\mt5_startup.ini"
 RPYC_PORT="${MT5_RPYC_PORT:-8001}"
 TICK_BRIDGE_PORT="${MT5_TICK_BRIDGE_PORT:-18080}"
 TICK_BRIDGE_ENABLED="${MT5_TICK_BRIDGE_ENABLED:-true}"
@@ -221,6 +223,12 @@ else
 fi
 
 log "[5/7] MT5 configured."
+
+# Keep the live startup configuration at a path without spaces. MT5's updater
+# may otherwise truncate /config at "Program Files" when it relaunches.
+if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
+    cp "$MT5_CONFIG_DIR/auto_login.ini" "$MT5_RUNTIME_CONFIG"
+fi
 
 # ============================================================
 # [6/7] Sync & compile MQL5 files (EAs, indicators, scripts)
@@ -445,7 +453,7 @@ if [ -e "$MT5_EXE" ]; then
         log "[7/7] Launching MT5 terminal..."
         mt5_args="/portable"
         if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
-            mt5_args="$mt5_args /config:${MT5_WIN_CONFIG}\\auto_login.ini"
+            mt5_args="$mt5_args /config:${MT5_WIN_RUNTIME_CONFIG}"
         fi
 
         $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
