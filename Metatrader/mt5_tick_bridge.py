@@ -15,7 +15,10 @@ from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-import MetaTrader5 as mt5
+try:
+    import MetaTrader5 as mt5
+except ImportError:  # Allows journal unit tests outside the Wine runtime.
+    mt5 = None
 
 
 PIPE_NAME = r"\\.\pipe\mt5_ticks"
@@ -187,8 +190,12 @@ class TickBuffer:
                 "durable": True,
             }
 
+    def close(self) -> None:
+        with self._lock:
+            self._db.close()
 
-ticks: TickBuffer | None = None
+
+ticks = None
 mt5_lock = threading.Lock()
 
 
@@ -265,6 +272,8 @@ def pipe_loop(pipe_name: str) -> None:
 
 
 def ensure_mt5() -> None:
+    if mt5 is None:
+        raise RuntimeError("MetaTrader5 package is unavailable")
     if not mt5.initialize():
         raise RuntimeError(f"mt5.initialize failed: {mt5.last_error()}")
 

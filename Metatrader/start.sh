@@ -423,8 +423,17 @@ if [ -e "$MT5_EXE" ]; then
     else
         if [ "$TICK_BRIDGE_ENABLED" = "true" ]; then
             log "[7/7] Starting MT5 tick bridge on port $TICK_BRIDGE_PORT..."
-            $WINE python.exe Z:\\Metatrader\\mt5_tick_bridge.py \
-                --addr "0.0.0.0:$TICK_BRIDGE_PORT" --db "$TICK_BRIDGE_DB" &
+            (
+                while true; do
+                    if ! $WINE python.exe Z:\\Metatrader\\mt5_tick_bridge.py \
+                        --addr "0.0.0.0:$TICK_BRIDGE_PORT" --db "$TICK_BRIDGE_DB"; then
+                        log "MT5 tick bridge crashed; restarting in 1 second"
+                    else
+                        log "MT5 tick bridge exited; restarting in 1 second"
+                    fi
+                    sleep 1
+                done
+            ) &
             for i in $(seq 1 40); do
                 if timeout 1 bash -c "echo > /dev/tcp/127.0.0.1/$TICK_BRIDGE_PORT" 2>/dev/null; then
                     log "[7/7] MT5 tick bridge listening on port $TICK_BRIDGE_PORT"
@@ -432,7 +441,8 @@ if [ -e "$MT5_EXE" ]; then
                 fi
                 sleep 0.25
                 if [ "$i" -eq 40 ]; then
-                    log "[7/7] WARNING: MT5 tick bridge failed to start"
+                    log "[7/7] ERROR: MT5 tick bridge failed to start"
+                    exit 1
                 fi
             done
         fi
