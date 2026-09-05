@@ -41,6 +41,7 @@ MT5_MQL5_DIR="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/MQL5"
 MT5_CONFIG_DIR="$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/Config"
 MT5_WIN_INSTALL="C:\\Program Files\\${MT5_INSTALL_DIR_NAME}"
 MT5_WIN_CONFIG="${MT5_WIN_INSTALL}\\Config"
+MT5_WIN_CONFIG_REL="Config"
 RPYC_PORT="${MT5_RPYC_PORT:-8001}"
 TICK_BRIDGE_PORT="${MT5_TICK_BRIDGE_PORT:-18080}"
 TICK_BRIDGE_ENABLED="${MT5_TICK_BRIDGE_ENABLED:-true}"
@@ -403,7 +404,7 @@ if [ -e "$MT5_EXE" ]; then
 
         log "[7/7] Launching MT5 with tester config..."
         $WINE "$(basename "$MT5_EXE")" /portable \
-            "/config:${MT5_WIN_CONFIG}\\tester.ini" $MT5_CMD_OPTIONS &
+            "/config:${MT5_WIN_CONFIG_REL}\\tester.ini" $MT5_CMD_OPTIONS &
         MT5_PID=$!
 
         log "[7/7] Waiting for backtest to complete (PID $MT5_PID)..."
@@ -450,7 +451,7 @@ if [ -e "$MT5_EXE" ]; then
         log "[7/7] Launching MT5 terminal..."
         if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
             $WINE "$(basename "$MT5_EXE")" /portable \
-                "/config:${MT5_WIN_CONFIG}\\auto_login.ini" $MT5_CMD_OPTIONS &
+                "/config:${MT5_WIN_CONFIG_REL}\\auto_login.ini" $MT5_CMD_OPTIONS &
         else
             $WINE "$(basename "$MT5_EXE")" /portable $MT5_CMD_OPTIONS &
         fi
