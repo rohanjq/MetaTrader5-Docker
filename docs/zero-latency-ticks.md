@@ -8,6 +8,9 @@ The receiving application must create the named-pipe server before the EA connec
 
 - The hot path calls `SymbolInfoTick`, writes one 144-byte frame, and flushes it immediately.
 - Pipe connection and reconnection attempts occur in `OnTimer`, not `OnTick`.
+- `OnTick` is the primary publisher. A deduplicated 10 ms timer check also
+  covers Wine/startup charts that update their tick cache without dispatching
+  an `OnTick` event.
 - When no receiver is running, ticks are dropped instead of queued or blocking the terminal.
 - There is no per-tick logging.
 - Attach one EA per chart symbol. Set `MT5_STARTUP_SYMBOL` to choose the default symbol.
@@ -42,7 +45,7 @@ The frame’s `captured_us` value is useful for ordering and measuring time insi
 The EA inputs are:
 
 - `INP_PipeName`: defaults to `\\.\pipe\mt5_ticks`.
-- `INP_ReconnectMs`: connection retry interval, default 100 ms and minimum 10 ms.
+- `INP_ReconnectMs`: reconnect and fallback-poll interval, default and minimum 10 ms.
 
 To run the trading EA again, set this in `.env`:
 

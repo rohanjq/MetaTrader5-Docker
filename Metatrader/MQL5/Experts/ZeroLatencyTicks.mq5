@@ -8,7 +8,7 @@
 #property description "Low-latency binary tick publisher over a local named pipe"
 
 input string INP_PipeName       = "\\\\.\\pipe\\mt5_ticks";
-input int    INP_ReconnectMs    = 100;
+input int    INP_ReconnectMs    = 10;
 
 #define TICK_MAGIC        0x5435544D // "MT5T" when read as little-endian bytes
 #define TICK_VERSION      1
@@ -37,6 +37,14 @@ struct TickFrame
 int       g_pipe = INVALID_HANDLE;
 ulong     g_sequence = 0;
 TickFrame g_frame;
+int       g_last_connect_error = 0;
+bool      g_logged_first_tick = false;
+long      g_last_time_msc = -1;
+double    g_last_bid = 0.0;
+double    g_last_ask = 0.0;
+double    g_last_last = 0.0;
+ulong     g_last_volume = 0;
+uint      g_last_flags = 0;
 
 uint SymbolHash(const string value)
 {
@@ -81,7 +89,20 @@ void ConnectPipe()
    ResetLastError();
    g_pipe = FileOpen(INP_PipeName, FILE_READ | FILE_WRITE | FILE_BIN);
    if(g_pipe == INVALID_HANDLE)
-      ResetLastError(); // A consumer/server is not running yet; retry on the timer.
+   {
+      const int error = GetLastError();
+      // A missing server is normal. Log only when the state changes so a bad
+      // pipe path or permissions problem remains diagnosable without spam.
+      if(error != g_last_connect_error)
+         PrintFormat("ZeroLatencyTicks waiting for pipe: %s (error %d)",
+                     INP_PipeName, error);
+      g_last_connect_error = error;
+      ResetLastError();
+      return;
+   }
+
+   g_last_connect_error = 0;
+   PrintFormat("ZeroLatencyTicks connected: %s", INP_PipeName);
 }
 
 int OnInit()
@@ -110,18 +131,32 @@ void OnDeinit(const int reason)
 void OnTimer()
 {
    ConnectPipe();
+   PublishLatestTick();
 }
 
-void OnTick()
+void PublishLatestTick()
 {
-   // Never attempt a connection here: opening a missing pipe belongs off the
-   // latency-sensitive path and is handled by OnTimer().
    if(g_pipe == INVALID_HANDLE)
       return;
 
    MqlTick tick;
    if(!SymbolInfoTick(_Symbol, tick))
       return;
+
+   // OnTick is the primary path. The 10 ms timer also calls this function as
+   // a Wine/startup-chart fallback, but this identity check prevents repeats.
+   if(tick.time_msc == g_last_time_msc &&
+      tick.bid == g_last_bid && tick.ask == g_last_ask &&
+      tick.last == g_last_last && tick.volume == g_last_volume &&
+      tick.flags == g_last_flags)
+      return;
+
+   g_last_time_msc = tick.time_msc;
+   g_last_bid = tick.bid;
+   g_last_ask = tick.ask;
+   g_last_last = tick.last;
+   g_last_volume = tick.volume;
+   g_last_flags = tick.flags;
 
    g_frame.sequence = ++g_sequence;
    g_frame.time_msc = tick.time_msc;
@@ -136,7 +171,26 @@ void OnTick()
    ResetLastError();
    const uint written = FileWriteStruct(g_pipe, g_frame);
    FileFlush(g_pipe); // Push this frame immediately; do not wait for file buffering.
+   const int error = GetLastError();
 
-   if(written != sizeof(g_frame) || GetLastError() != 0)
+   if(!g_logged_first_tick)
+   {
+      PrintFormat("ZeroLatencyTicks first tick: sequence=%I64u written=%u error=%d",
+                  g_frame.sequence, written, error);
+      g_logged_first_tick = true;
+   }
+
+   if(written != sizeof(g_frame) || error != 0)
+   {
+      PrintFormat("ZeroLatencyTicks pipe write failed: written=%u expected=%u error=%d",
+                  written, sizeof(g_frame), error);
       DisconnectPipe();
+   }
+}
+
+void OnTick()
+{
+   // Never attempt a connection here: opening a missing pipe belongs off the
+   // latency-sensitive path and is handled by OnTimer().
+   PublishLatestTick();
 }
