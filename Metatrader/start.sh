@@ -347,6 +347,12 @@ fi
 # ============================================================
 # [7/7] Launch MT5 terminal + rpyc server
 # ============================================================
+# Recent MetaEditor builds may leave an unconfigured terminal running after an
+# automatic platform update. Stop Wine here, before any bridge is started, so
+# the single launch below always owns the configured startup profile and EA.
+wineserver -k 2>/dev/null || true
+sleep 2
+
 if [ -e "$MT5_EXE" ]; then
     cd "$(dirname "$MT5_EXE")"
 
