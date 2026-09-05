@@ -402,8 +402,8 @@ if [ -e "$MT5_EXE" ]; then
         mkdir -p "$WINEPREFIX/drive_c/Program Files/$MT5_INSTALL_DIR_NAME/reports"
 
         log "[7/7] Launching MT5 with tester config..."
-        $WINE "$(basename "$MT5_EXE")" /portable \
-            "/config:${MT5_WIN_CONFIG}\\tester.ini" $MT5_CMD_OPTIONS &
+        mt5_args="/portable /config:${MT5_WIN_CONFIG}\\tester.ini"
+        $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
         MT5_PID=$!
 
         log "[7/7] Waiting for backtest to complete (PID $MT5_PID)..."
@@ -448,12 +448,12 @@ if [ -e "$MT5_EXE" ]; then
         fi
 
         log "[7/7] Launching MT5 terminal..."
+        mt5_args="/portable"
         if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
-            $WINE "$(basename "$MT5_EXE")" /portable \
-                "/config:${MT5_WIN_CONFIG}\\auto_login.ini" $MT5_CMD_OPTIONS &
-        else
-            $WINE "$(basename "$MT5_EXE")" /portable $MT5_CMD_OPTIONS &
+            mt5_args="$mt5_args /config:${MT5_WIN_CONFIG}\\auto_login.ini"
         fi
+
+        $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
         sleep 20
         log "[7/7] MT5 terminal launched."
     fi
