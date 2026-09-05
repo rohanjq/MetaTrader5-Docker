@@ -434,6 +434,17 @@ if [ -e "$MT5_EXE" ]; then
 
         log "[7/7] Tester run complete."
     else
+        log "[7/7] Launching MT5 terminal..."
+        mt5_args="/portable"
+        if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
+            mt5_args="$mt5_args /config:${MT5_WIN_RUNTIME_CONFIG}"
+        fi
+
+        $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
+
+        # Launch MT5 first. Newer terminal builds register an automatic Wine
+        # startup entry; starting Wine Python first can launch an unconfigured
+        # terminal which then rejects the configured instance above.
         if [ "$TICK_BRIDGE_ENABLED" = "true" ]; then
             log "[7/7] Starting MT5 tick bridge on port $TICK_BRIDGE_PORT..."
             $WINE python.exe Z:\\Metatrader\\mt5_tick_bridge.py \
@@ -450,13 +461,6 @@ if [ -e "$MT5_EXE" ]; then
             done
         fi
 
-        log "[7/7] Launching MT5 terminal..."
-        mt5_args="/portable"
-        if [ -f "$MT5_CONFIG_DIR/auto_login.ini" ]; then
-            mt5_args="$mt5_args /config:${MT5_WIN_RUNTIME_CONFIG}"
-        fi
-
-        $WINE "$(basename "$MT5_EXE")" $mt5_args $MT5_CMD_OPTIONS &
         sleep 20
         log "[7/7] MT5 terminal launched."
     fi
