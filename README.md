@@ -22,17 +22,18 @@ you want to use another YAML file.
 
 Access MT5 via browser at `http://<host>:3000`.
 
-When this repository is checked out beside `ohlc/` and `signals/`, manage the
-whole local stack in dependency order with the common wrapper:
+When this repository is checked out beside `ohlc/`, `signals/`, and `stream/`,
+manage the whole local stack in dependency order with the common wrapper:
 
 ```bash
-./stack.sh up --build   # MT5, then OHLC, then Signals
+./stack.sh up --build   # MT5, then OHLC, Signals, and Stream
 ./stack.sh status
 ./stack.sh down         # reverse order
 ```
 
 After images exist, `./stack.sh up` is sufficient. Override sibling locations
-with `MT5_REPO_DIR`, `OHLC_REPO_DIR`, or `SIGNALS_REPO_DIR` if needed.
+with `MT5_REPO_DIR`, `OHLC_REPO_DIR`, `SIGNALS_REPO_DIR`, or `STREAM_REPO_DIR`
+if needed. OHLC's compose configuration selects the local MT5 provider directly.
 
 ## Documentation
 

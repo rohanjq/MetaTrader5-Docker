@@ -7,6 +7,7 @@ workspace_dir=$(dirname "$script_dir")
 mt5_dir=${MT5_REPO_DIR:-"$script_dir"}
 ohlc_dir=${OHLC_REPO_DIR:-"$workspace_dir/ohlc"}
 signals_dir=${SIGNALS_REPO_DIR:-"$workspace_dir/signals"}
+stream_dir=${STREAM_REPO_DIR:-"$workspace_dir/stream"}
 compose=${COMPOSE_COMMAND:-podman-compose}
 wait_seconds=${STACK_WAIT_SECONDS:-180}
 
@@ -80,10 +81,11 @@ up_stack() {
     require_file "$mt5_dir/.env"
     require_file "$ohlc_dir/.env"
     require_file "$signals_dir/.env"
+    require_file "$stream_dir/.env"
     ohlc_port=$(env_value "$ohlc_dir/.env" OHLC_HTTP_PORT 8080)
     signals_port=$(env_value "$signals_dir/.env" SIGNALD_HTTP_PORT 8090)
 
-    echo "[1/3] Starting MetaTrader 5"
+    echo "[1/4] Starting MetaTrader 5"
     if [ -n "$build_arg" ]; then
         compose_in "$mt5_dir" docker-compose.live.yaml up -d --build
     else
@@ -91,8 +93,7 @@ up_stack() {
     fi
     wait_http "MetaTrader KasmVNC" "http://127.0.0.1:3000/" false
 
-    echo "[2/3] Starting OHLC"
-    (cd "$ohlc_dir" && ./scripts/preflight.sh)
+    echo "[2/4] Starting OHLC"
     if [ -n "$build_arg" ]; then
         compose_in "$ohlc_dir" docker-compose.yml up -d --build
     else
@@ -100,7 +101,7 @@ up_stack() {
     fi
     wait_http "OHLC" "http://127.0.0.1:${ohlc_port}/healthz" true
 
-    echo "[3/3] Starting Signals"
+    echo "[3/4] Starting Signals"
     if [ -n "$build_arg" ]; then
         compose_in "$signals_dir" compose.yaml up -d --build
     else
@@ -115,10 +116,20 @@ up_stack() {
         echo "warning: Signals is running but waiting for its upstream data" >&2
     fi
 
+    echo "[4/4] Starting Stream"
+    if [ -n "$build_arg" ]; then
+        compose_in "$stream_dir" compose.yaml up -d --build
+    else
+        compose_in "$stream_dir" compose.yaml up -d
+    fi
+    wait_http "Stream" "http://127.0.0.1:8080/api/health" true
+    wait_http "Stream compositor" "http://127.0.0.1:7800/health" true
+
     echo "stack services started"
 }
 
 down_stack() {
+    compose_in "$stream_dir" compose.yaml down
     compose_in "$signals_dir" compose.yaml down
     compose_in "$ohlc_dir" docker-compose.yml down
     compose_in "$mt5_dir" docker-compose.live.yaml down
@@ -131,17 +142,21 @@ status_stack() {
     compose_in "$ohlc_dir" docker-compose.yml ps
     echo "Signals"
     compose_in "$signals_dir" compose.yaml ps
+    echo "Stream"
+    compose_in "$stream_dir" compose.yaml ps
 }
 
 logs_stack() {
     compose_in "$mt5_dir" docker-compose.live.yaml logs --tail 40
     compose_in "$ohlc_dir" docker-compose.yml logs --tail 40
     compose_in "$signals_dir" compose.yaml logs --tail 40
+    compose_in "$stream_dir" compose.yaml logs --tail 40
 }
 
 case "${1:-}" in
     up)
         shift
+        [ "$#" -le 1 ] || usage
         up_stack "${1:-}"
         ;;
     down)
@@ -150,6 +165,8 @@ case "${1:-}" in
         ;;
     restart)
         shift
+        [ "$#" -le 1 ] || usage
+        [ "$#" -eq 0 ] || [ "$1" = "--build" ] || usage
         build_arg=${1:-}
         down_stack
         up_stack "$build_arg"
