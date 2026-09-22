@@ -5,10 +5,14 @@ services:
       dockerfile: Dockerfile
     image: mt5-docker
     container_name: mt5-tester
+    # Keep container UID 1000 aligned with the WSL user.  Starting as root is
+    # still required so the linuxserver init can prepare /config and /data.
+    userns_mode: keep-id
+    user: "0:0"
     volumes:
       - ./config-tester:/config
       - ./data-tester:/data
-      - ./config-tester.yaml:/data/config/config.yaml
+      - ${MT5_CONFIG_FILE:-./presets/8-aggressive-proven.yaml}:/mt5-config/config.yaml:ro
     ports:
       - 3001:3000
       - 8002:8001

@@ -5,22 +5,29 @@
 # ============================================================
 set -euo pipefail
 
-# ---- Validate config.yaml mount --------------------------
-CONFIG_FILE="${MT5_DATA:-/data}/config/config.yaml"
+# ---- Import host config into the writable data volume ------
+DATA_DIR="${MT5_DATA:-/data}"
+CONFIG_SOURCE="${MT5_CONFIG_SOURCE:-/mt5-config/config.yaml}"
+CONFIG_FILE="$DATA_DIR/config/config.yaml"
+
+if [ -f "$CONFIG_SOURCE" ]; then
+    mkdir -p "$DATA_DIR/config"
+    cp "$CONFIG_SOURCE" "$CONFIG_FILE"
+fi
+
+# ---- Validate imported config.yaml -----------------------
 if [ -d "$CONFIG_FILE" ]; then
     echo "FATAL: $CONFIG_FILE is a directory, not a file."
-    echo "This happens when the host file doesn't exist and Docker/Podman auto-creates it as a dir."
-    echo "Fix: cp presets/8-aggressive-proven.yaml config-live.yaml  (or config-tester.yaml)"
+    echo "Remove the stale data/config/config.yaml directory and restart."
     exit 1
 fi
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "FATAL: $CONFIG_FILE not found. Mount a config.yaml into the container."
-    echo "Fix: cp presets/<preset>.yaml config-live.yaml  (or config-tester.yaml)"
+    echo "FATAL: $CONFIG_FILE not found."
+    echo "Set MT5_CONFIG_FILE to an existing host YAML file and restart."
     exit 1
 fi
 
 # ---- Paths ------------------------------------------------
-DATA_DIR="${MT5_DATA:-/data}"
 DOWNLOADS_DIR="$DATA_DIR/downloads"
 EXPERTS_DIR="$DATA_DIR/experts"
 INDICATORS_DIR="$DATA_DIR/indicators"

@@ -40,6 +40,7 @@ Set in `.env` (see `.env.example`):
 | `PGID` | `1000` | Container group ID |
 | `CUSTOM_USER` | `abc` | Container username |
 | `PASSWORD` | (required) | KasmVNC password |
+| `MT5_CONFIG_FILE` | `./presets/8-aggressive-proven.yaml` | Host YAML file mounted as the active strategy config |
 
 ## Volumes
 
@@ -48,6 +49,12 @@ volumes:
   - ./config:/config    # KasmVNC config (managed by linuxserver base)
   - ./data:/data        # All MT5 data, logs, reports, config
 ```
+
+The compose definitions use Podman's `keep-id` user namespace so files written
+by container UID 1000 stay owned by the invoking WSL user. Missing `config*`
+and `data*` directories are created automatically on first start. The selected
+host YAML is mounted read-only outside `/data` and copied into the writable data
+volume during startup.
 
 ## `/data` Directory Structure
 

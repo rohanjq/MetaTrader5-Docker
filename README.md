@@ -9,13 +9,30 @@ cp .env.example .env
 # Edit .env: set MT5_LOGIN, MT5_PASSWORD, MT5_SERVER
 
 # Live trading
-MT5_MODE=live podman-compose up -d --build
+podman-compose -f docker-compose.live.yaml up -d --build
 
 # Backtesting
-MT5_MODE=tester podman-compose up --build
+podman-compose -f docker-compose.tester.yaml up --build
 ```
 
+The compose files create their bind-mount directories automatically. Rootless
+Podman uses `keep-id`, so generated files remain owned by your WSL user. A
+tracked preset is mounted by default; set `MT5_CONFIG_FILE` in `.env` only when
+you want to use another YAML file.
+
 Access MT5 via browser at `http://<host>:3000`.
+
+When this repository is checked out beside `ohlc/` and `signals/`, manage the
+whole local stack in dependency order with the common wrapper:
+
+```bash
+./stack.sh up --build   # MT5, then OHLC, then Signals
+./stack.sh status
+./stack.sh down         # reverse order
+```
+
+After images exist, `./stack.sh up` is sufficient. Override sibling locations
+with `MT5_REPO_DIR`, `OHLC_REPO_DIR`, or `SIGNALS_REPO_DIR` if needed.
 
 ## Documentation
 

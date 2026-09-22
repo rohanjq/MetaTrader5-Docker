@@ -1,4 +1,6 @@
 #!/usr/bin/with-contenv bash
 # Create data subdirectories + wine prefix with correct ownership
-mkdir -p /data/{downloads,experts,indicators,scripts,signals,logs,wine}
+set -e
+
+mkdir -p /data/{config,downloads,experts,indicators,scripts,signals,logs,reports,wine}
 chown -R abc:abc /data
